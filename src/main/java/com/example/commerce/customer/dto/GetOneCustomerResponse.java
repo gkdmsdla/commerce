@@ -1,5 +1,6 @@
 package com.example.commerce.customer.dto;
 
+import com.example.commerce.customer.entity.CustomerStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,7 +13,8 @@ public class GetOneCustomerResponse {
     private final String name;
     private final String email;
     private final String phone;
-    private final String status;
+    private final CustomerStatus status;
+    private final String statusName;
     private final LocalDateTime createdAt;
     private final LocalDateTime modifiedAt;
 }

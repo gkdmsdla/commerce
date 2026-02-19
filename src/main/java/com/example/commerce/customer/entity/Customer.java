@@ -1,5 +1,6 @@
 package com.example.commerce.customer.entity;
 
+import com.example.commerce.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Entity
 @Table(name = "customer")
-public class Customer {
+public class Customer extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,31 +28,11 @@ public class Customer {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CustomerStatus status; // 고객 상태
-
-    @Column(nullable = false)
-    private LocalDateTime createAt; // 가입일
+    private CustomerStatus status;
 
     @Column(nullable = false)
     private LocalDateTime modifiedAt; // 수정일
 
-    // 고객 생성 시 시간 자동 입력
-    @PrePersist
-    public void timeCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createAt = now;
-        this.modifiedAt = now;
-
-        if (this.status == null) {
-            this.status = CustomerStatus.ACTIVE;
-        }
-    }
-
-    // 수정할 때 자동 갱신
-    @PreUpdate
-    public void timeUpdate() {
-        this.modifiedAt = LocalDateTime.now();
-    }
 
     // 고객 정보 변경
     public void update(String name, String email, String phone) {
@@ -62,6 +43,7 @@ public class Customer {
 
     // 상태 변경
     public void statusUpdate(CustomerStatus status) {
+
         this.status = status;
     }
 }
