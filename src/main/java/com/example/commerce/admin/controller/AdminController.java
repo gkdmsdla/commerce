@@ -86,7 +86,7 @@ public class AdminController {
 
     //수정 필요
     //관리자 1명의 정보 상세조회
-    @PreAuthorize("#id == authentication.principal.id")
+    @PreAuthorize("hasRole('CS_ADMIN')")
     @GetMapping("/admins/{id}")
     public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(@PathVariable long id){
         GetAdminResponse response = adminService.getOne(id);
@@ -96,8 +96,8 @@ public class AdminController {
     // 그냥 내 정보 조회
     //수정 필요
     @PreAuthorize("hasRole('CS_ADMIN')")
-    @GetMapping("/admins")
-    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(@PathVariable long id, HttpSession session){
+    @GetMapping("/admins/me")
+    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(HttpSession session){
         GetAdminResponse response = adminService.getOne(id);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
