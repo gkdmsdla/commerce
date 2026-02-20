@@ -12,4 +12,3 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     // 등록된 이메일 확인
     Optional<Customer> findByEmail(String email);
 }
-
