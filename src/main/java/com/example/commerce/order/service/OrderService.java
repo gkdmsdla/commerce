@@ -26,6 +26,7 @@ public class OrderService {
     private final AdminRepository adminRepository;
 
 
+    // 주문 생성
     @Transactional
     public CreateOrderResponse create(long sessionCustomerId, @Valid CreateOrderRequest request) {
         // 세션에 저장되어있는 id 를 기반으로
@@ -113,13 +114,41 @@ public class OrderService {
         return (long) quantity * price;
     }
 
-    public GetOneOrderResponse getOneOrder(Long orderId, Long sessionAdminId) {
+    // 주문 단 건 조회 (관리자용)
+    public GetOneAdminOrderResponse getOneAdminOrder(Long orderId, Long sessionAdminId) {
         Order order = orderRepository.findById(orderId)
-                .orElseTrow(() -> new ServiceException(ErrorCode.ORDER_NOT_FOUND));
+                .orElseTrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
 
         // 관리자 로그인 체크
         if (sessionAdminId == null) {
-            throw new ServiceException(ErrorCode.FORBIDDEN); // 에러코드 확인 후 다르면 변경 예정
+            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
+        }
+
+        Order newOrder = orderRepository.save(order);
+
+        return new GetOneAdminOrderResponse(
+                newOrder.getOrderNo(),
+                newOrder.getQuantity(),
+                OrderStatus.PREPARING,
+                newOrder.getCustomer().getName(),
+                newOrder.getCustomer().getEmail(),
+                newOrder.getProduct().getName(),
+                newOrder.getProduct().getPrice(),
+                newOrder.getCreatedAt(),
+                newOrder.getAdmin().getName(),
+                newOrder.getAdmin().getEmail(),
+                newOrder.getAdmin().getRole()
+        );
+    }
+
+    // 주문 단 건 조회 (고객용)
+    public GetOneOrderResponse getOneOrder(Long orderId, Long sessionCustomerId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseTrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
+
+        // 고객 로그인 체크
+        if (sessionCustomerId == null) {
+            throw new ServiceException(ErrorCode.CUSTOMER_MISMATCH);
         }
 
         Order newOrder = orderRepository.save(order);
@@ -132,10 +161,7 @@ public class OrderService {
                 newOrder.getCustomer().getEmail(),
                 newOrder.getProduct().getName(),
                 newOrder.getProduct().getPrice(),
-                newOrder.getCreatedAt(),
-                newOrder.getAdmin().getName(),
-                newOrder.getAdmin().getEmail(),
-                newOrder.getAdmin().getRole()
+                newOrder.getCreatedAt()
         );
     }
 
