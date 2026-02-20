@@ -1,6 +1,5 @@
 package com.example.commerce.customer.dto;
 
-import com.example.commerce.customer.entity.CustomerStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
