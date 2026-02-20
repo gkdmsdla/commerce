@@ -17,4 +17,65 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/customers")
 public class CustomerController {
+
+    private final CustomerService customerService;
+
+    // 회원가입
+    @PostMapping("/signup")
+    public ResponseEntity<CommonResponseDTO<CreateCustomerResponse>> signup(
+            @Valid @RequestBody CreateCustomerRequest request
+    ) {
+        CreateCustomerResponse response = customerService.createCustomerResponse(request);
+        return CommonResponseHandler.success(SuccessCode.CUSTOMER_SIGNUP, response);
     }
+
+    //로그인
+    @PostMapping("/login")
+    public ResponseEntity<CommonResponseDTO<String>> login(
+            @Valid @RequestBody LoginCustomerRequest request,
+            HttpSession session
+    ) {
+        String message = customerService.customerLogin(request, session);
+        session.setMaxInactiveInterval(120);
+        return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, message);
+    }
+
+    // 고객 상세 조회
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CommonResponseDTO<GetCustomersResponse>> findCustomer(
+            @PathVariable Long id
+    ){
+        GetOneCustomerResponse response = customerService.findCustomer(id);
+
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
+    }
+
+    // 고객 리스트 조회
+
+    @GetMapping
+    public ResponseEntity<CommonResponseDTO<List<GetOneCustomerResponse>>> findAllCustomer(){
+        List<GetOneCustomerResponse> responses = customerService.findAllCustomer();
+
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, responses);
+    }
+
+    // 고객 정보 수정
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<CommonResponseDTO<GetOneCustomerResponse>> updateCustomer(
+            @PathVariable Long id,
+            @RequestBody UpdateCustomerRequest request
+    ) {
+        GetOneCustomerResponse response = customerService.updateCustomer(id, request);
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<CommonResponseDTO<Void>> deleteCustomer(
+            @PathVariable Long id
+    ) {
+        customerService.deleteCustomer(id);
+        return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL, null);
+    }
+}

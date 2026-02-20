@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UpdateCustomerStatusResponse {
     private final Long customerId;
-    private final CustomerStatus customerStatus;
     private final String customerStatusName;
     private final LocalDateTime modifiedAt;
 }

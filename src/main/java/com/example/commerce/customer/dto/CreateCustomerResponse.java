@@ -14,7 +14,6 @@ public class CreateCustomerResponse {
     private final String customerName;
     private final String customerEmail;
     private final String customerPhone;
-    private final CustomerStatus customerStatus;
     private final String customerStatusName;
     private final LocalDateTime customerCreatedAt;
     private final LocalDateTime customerModifiedAt;

@@ -47,7 +47,6 @@ public class CustomerService {
                 saved.getName(),
                 saved.getEmail(),
                 saved.getPhone(),
-                saved.getStatus(),
                 saved.getStatus().getStatusName(),
                 saved.getCreatedAt(),
                 saved.getModifiedAt()
@@ -86,7 +85,6 @@ public class CustomerService {
                 customer.getName(),
                 customer.getEmail(),
                 customer.getPhone(),
-                customer.getStatus(),
                 customer.getStatus().getStatusName(),
                 customer.getCreatedAt(),
                 customer.getModifiedAt()
@@ -104,7 +102,6 @@ public class CustomerService {
                         customer.getName(),
                         customer.getEmail(),
                         customer.getPhone(),
-                        customer.getStatus(),
                         customer.getStatus().getStatusName(),
                         customer.getCreatedAt(),
                         customer.getModifiedAt()
@@ -138,7 +135,6 @@ public class CustomerService {
                 customer.getName(),
                 customer.getEmail(),
                 customer.getPhone(),
-                customer.getStatus(),
                 customer.getStatus().getStatusName(),
                 customer.getCreatedAt(),
                 customer.getModifiedAt()
