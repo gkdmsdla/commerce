@@ -43,7 +43,7 @@ public class CustomerController {
     // 고객 상세 조회
 
     @GetMapping("/{id}")
-    public ResponseEntity<CommonResponseDTO<GetCustomersResponse>> findCustomer(
+    public ResponseEntity<CommonResponseDTO<GetOneCustomerResponse>> findCustomer(
             @PathVariable Long id
     ){
         GetOneCustomerResponse response = customerService.findCustomer(id);
