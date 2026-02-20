@@ -6,6 +6,7 @@ import com.example.commerce.admin.repository.AdminRepository;
 import com.example.commerce.customer.entity.Customer;
 import com.example.commerce.customer.repository.CustomerRepository;
 import com.example.commerce.global.exception.ErrorCode;
+import com.example.commerce.global.exception.GlobalExceptionHandler;
 import com.example.commerce.order.dto.*;
 import com.example.commerce.order.entity.Order;
 import com.example.commerce.order.entity.OrderStatus;
@@ -124,19 +125,17 @@ public class OrderService {
         List<Order> orders = orderRepository.findAll();
         List<GetAllAdminOrderResponse> dtos = new ArrayList<>();
 
-        Customer customer = customerRepository.findCustomerById(sessionCustomerId);
-
         for (Order order : orders) {
             GetAllAdminOrderResponse dto = new GetAllAdminOrderResponse(
                     order.getId(),
                     order.getOrderNo(),
-                    order.getCustomer().getName,
+                    order.getCustomer().getName(),
                     order.getProduct().getName(),
                     order.getTotalPrice(),
                     order.getStatus(),
                     order.getCreatedAt(),
                     order.getAdmin().getName(),
-                    order.getAdminRole
+                    order.getAdmin().getRole()
             );
             dtos.add(dto);
         }
