@@ -2,6 +2,9 @@ package com.example.commerce.admin.controller;
 
 import com.example.commerce.admin.dto.*;
 import com.example.commerce.admin.service.AdminService;
+import com.example.commerce.global.common.CommonResponseDTO;
+import com.example.commerce.global.common.CommonResponseHandler;
+import com.example.commerce.global.common.SuccessCode;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +20,15 @@ public class AdminController {
     private final AdminService adminService;
 
     @PostMapping("/signup")
-    ResponseEntity<SignupResponse> signup(@Valid @RequestBody SignupRequest request){
+    ResponseEntity<CommonResponseDTO<SignupResponse>> signup(@Valid @RequestBody SignupRequest request){
         SignupResponse response = adminService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        return CommonResponseHandler.success(SuccessCode.ADMIN_SIGNUP, response);
+        //return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    ResponseEntity<LoginResponse> login(
+    ResponseEntity<CommonResponseDTO<LoginResponse>> login(
             @Valid @RequestBody LoginRequest request,
             HttpSession session
     ){
@@ -33,7 +38,8 @@ public class AdminController {
 
         session.setAttribute("loginAdmin", sessionAdmin);
         session.setMaxInactiveInterval(120);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
+        //return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 }
