@@ -47,7 +47,7 @@ public class AdminService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
         Admin admin = adminRepository.findByEmail(request.getEmail()).orElseThrow(
                 ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)

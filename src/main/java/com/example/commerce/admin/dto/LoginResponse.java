@@ -8,21 +8,21 @@ import java.time.LocalDateTime;
 
 @Getter
 public class LoginResponse {
-    private final Long id;
-    private final String name;
-    private final String email;
-    private final String phone;
-    private final Role role;
-    private final AdminStatus status;
-    private final LocalDateTime createdAt;
+    private final Long adminId;
+    private final String adminName;
+    private final String adminEmail;
+    private final String adminPhone;
+    private final Role adminRole;
+    private final AdminStatus adminStatus;
+    private final LocalDateTime adminCreatedAt;
 
-    public LoginResponse(Long id, String name, String email, String phone, Role role, AdminStatus status, LocalDateTime createdAt) {
-        this.id = id;
-        this.name = name;
-        this.email = email;
-        this.phone = phone;
-        this.role = role;
-        this.status = status;
-        this.createdAt = createdAt;
+    public LoginResponse(Long adminId, String adminName, String adminEmail, String adminPhone, Role adminRole, AdminStatus adminStatus, LocalDateTime adminCreatedAt) {
+        this.adminId = adminId;
+        this.adminName = adminName;
+        this.adminEmail = adminEmail;
+        this.adminPhone = adminPhone;
+        this.adminRole = adminRole;
+        this.adminStatus = adminStatus;
+        this.adminCreatedAt = adminCreatedAt;
     }
 }

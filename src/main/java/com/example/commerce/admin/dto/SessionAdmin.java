@@ -10,8 +10,8 @@ public class SessionAdmin {
     private final Role role;
 
     public SessionAdmin(LoginResponse response) {
-        this.id = response.getId();
-        this.email = response.getEmail();
-        this.role = response.getRole();
+        this.id = response.getAdminId();
+        this.email = response.getAdminEmail();
+        this.role = response.getAdminRole();
     }
 }
