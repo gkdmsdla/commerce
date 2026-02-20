@@ -2,70 +2,105 @@ package com.example.commerce.customer.controller;
 
 import com.example.commerce.customer.dto.*;
 import com.example.commerce.customer.service.CustomerService;
+import com.example.commerce.global.common.CommonResponseDTO;
+import com.example.commerce.global.common.CommonResponseHandler;
+import com.example.commerce.global.common.SuccessCode;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/customers")
 public class CustomerController {
 
     private final CustomerService customerService;
 
-    public CustomerController(CustomerService customerService) {
-        this.customerService = customerService;
-    }
-
-    // 고객 생성
-    @PostMapping
-    public CreateCustomerResponse createCustomer(
-            @RequestBody @Valid CreateCustomerRequest request
+    // 고객 회원가입
+    @PostMapping("/signup")
+    public ResponseEntity<CommonResponseDTO<CreateCustomerResponse>> signup(
+            @Valid @RequestBody CreateCustomerRequest request
     ) {
-        return customerService.createCustomerResponse(request);
+        CreateCustomerResponse response =
+                customerService.createCustomerResponse(request);
+
+        return CommonResponseHandler.success(
+                SuccessCode.CUSTOMER_SIGNUP,
+                response
+        );
     }
 
     // 로그인
     @PostMapping("/login")
-    public String login(
-            @RequestBody LoginCustomerRequest request,
+    public ResponseEntity<CommonResponseDTO<String>> login(
+            @Valid @RequestBody LoginCustomerRequest request,
             HttpSession session
     ) {
-        return customerService.customerLogin(request, session);
+        String message = customerService.customerLogin(request, session);
+
+        session.setMaxInactiveInterval(120);
+
+        return CommonResponseHandler.success(
+                SuccessCode.LOGIN_SUCCESSFUL,
+                message
+        );
     }
 
-    // 로그아웃
-    @PostMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return "로그아웃 성공";
-    }
-
-    // 고객 단건 조회
+    // 고객 상세 조회
     @GetMapping("/{id}")
-    public GetOneCustomerResponse findCustomer(@PathVariable Long id) {
-        return customerService.findCustomer(id);
+    public ResponseEntity<CommonResponseDTO<GetOneCustomerResponse>> findCustomer(
+            @PathVariable Long id
+    ) {
+        GetOneCustomerResponse response =
+                customerService.findCustomer(id);
+
+        return CommonResponseHandler.success(
+                SuccessCode.GET_SUCCESSFUL,
+                response
+        );
     }
 
-    // 고객 전체 조회
+    // 전체 조회
     @GetMapping
-    public List<GetOneCustomerResponse> findAllCustomer() {
-        return customerService.findAllCustomer();
+    public CommonResponseDTO<List<GetOneCustomerResponse>> findAllCustomer() {
+        List<GetOneCustomerResponse> response =
+                customerService.findAllCustomer();
+
+        return CommonResponseHandler.success(
+                SuccessCode.SUCCESS,
+                response
+        );
     }
 
-    // 고객 수정
+    // 수정
     @PatchMapping("/{id}")
-    public GetOneCustomerResponse updateCustomer(
+    public CommonResponseDTO<GetOneCustomerResponse> updateCustomer(
             @PathVariable Long id,
             @RequestBody UpdateCustomerRequest request
     ) {
-        return customerService.updateCustomer(id, request);
+        GetOneCustomerResponse response =
+                customerService.updateCustomer(id, request);
+
+        return CommonResponseHandler.success(
+                SuccessCode.SUCCESS,
+                response
+        );
     }
 
-    // 고객 삭제
+    // 삭제
     @DeleteMapping("/{id}")
-    public void deleteCustomer(@PathVariable Long id) {
+    public CommonResponseDTO<Void> deleteCustomer(
+            @PathVariable Long id
+    ) {
         customerService.deleteCustomer(id);
+
+        return CommonResponseHandler.success(
+                SuccessCode.SUCCESS,
+                null
+        );
     }
 }
