@@ -1,5 +1,8 @@
 package com.example.commerce.customer.entity;
 
+import lombok.Getter;
+
+@Getter
 public enum CustomerStatus {
 
     ACTIVE("활성"),

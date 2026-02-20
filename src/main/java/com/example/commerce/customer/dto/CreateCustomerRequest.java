@@ -1,24 +1,30 @@
 package com.example.commerce.customer.dto;
 
+import com.example.commerce.customer.entity.CustomerStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
 @Getter
 public class CreateCustomerRequest {
 
     @NotBlank(message = "이름은 필수입니다.")
-    private String name;
+    private String customerName;
 
     @NotBlank(message = "이메일은 필수입니다.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
-    private String email;
+    private String customerEmail;
 
     @NotBlank(message = "전화번호는 필수입니다.")
     @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 입니다.")
-    private String phone;
+    private String customerPhone;
 
-    private String status;
+    @NotBlank
+    @Size(min = 8)
+    private String customerPassword;
+
+    private CustomerStatus customerStatus;
 
 }

@@ -7,5 +7,5 @@ import lombok.Getter;
 @AllArgsConstructor
 public class DeleteCustomerResponse {
 
-    private final String message;
+    private final String customerMessage;
 }

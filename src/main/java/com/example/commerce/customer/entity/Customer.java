@@ -2,15 +2,15 @@ package com.example.commerce.customer.entity;
 
 import com.example.commerce.global.common.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor
 @Entity
-@Table(name = "customer")
+@Table(name = "customers")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Customer extends BaseEntity {
 
     @Id
@@ -24,15 +24,23 @@ public class Customer extends BaseEntity {
     private String email; // 고객 이메일
 
     @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
     private String phone; // 고객 전화번호
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CustomerStatus status;
 
-    @Column(nullable = false)
-    private LocalDateTime modifiedAt; // 수정일
-
+    // 고객 생성
+    public Customer(String name, String email, String password, String phone, CustomerStatus status){
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.phone = phone;
+        this.status = (status == null) ? CustomerStatus.ACTIVE : status;
+    }
 
     // 고객 정보 변경
     public void update(String name, String email, String phone) {

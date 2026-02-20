@@ -7,5 +7,5 @@ import lombok.Getter;
 public class UpdateCustomerStatusRequest {
 
     @NotBlank
-    private String status;
+    private String customerStatus;
 }

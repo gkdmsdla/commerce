@@ -10,12 +10,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CreateCustomerResponse {
 
-    private final Long id;
-    private final String name;
-    private final String email;
-    private final String phone;
-    private final CustomerStatus status;
-    private final String statusName;
-    private final LocalDateTime createdAt;
-    private final LocalDateTime modifiedAt;
+    private final Long customerId;
+    private final String customerName;
+    private final String customerEmail;
+    private final String customerPhone;
+    private final CustomerStatus customerStatus;
+    private final String customerStatusName;
+    private final LocalDateTime customerCreatedAt;
+    private final LocalDateTime customerModifiedAt;
 }
