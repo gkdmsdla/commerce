@@ -151,21 +151,21 @@ public class AdminService {
         admin.reject(reason);
     }
 
-    public GetAdminResponse getOne(long adminId) {
-        Admin admin = adminRepository.findById(adminId).orElseThrow(
-                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-        );
-
-        return new GetAdminResponse(
-                admin.getName(),
-                admin.getEmail(),
-                admin.getPhone(),
-                admin.getRole().getName(),
-                admin.getStatus().getTitle(),
-                admin.getCreatedAt(),
-                admin.getApprovedAt()
-        );
-    }
+//    public GetAdminResponse getOne(long adminId) {
+//        Admin admin = adminRepository.findById(adminId).orElseThrow(
+//                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+//        );
+//
+//        return new GetAdminResponse(
+//                admin.getName(),
+//                admin.getEmail(),
+//                admin.getPhone(),
+//                admin.getRole().getName(),
+//                admin.getStatus().getTitle(),
+//                admin.getCreatedAt(),
+//                admin.getApprovedAt()
+//        );
+//    }
 
     public GetMyInfoResponse getMyInfo(Long sessionAdminId) {
         Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(

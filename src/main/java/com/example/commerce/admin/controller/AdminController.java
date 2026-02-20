@@ -87,8 +87,8 @@ public class AdminController {
     //관리자 1명의 정보 상세조회
     @PreAuthorize("hasRole('CS_ADMIN')")
     @GetMapping("/admins/{id}")
-    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(@PathVariable long id){
-        GetAdminResponse response = adminService.getOne(id);
+    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getOne(@PathVariable long id){
+        AdminDetailResponse response = adminService.getAdminDetail(id);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
@@ -126,6 +126,13 @@ public class AdminController {
     @PostMapping("/{id}/approve")
     public ResponseEntity<CommonResponseDTO<Void>> approveAdmin(@PathVariable Long id) {
         adminService.approveAdmin(id);
+        return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED);
+    }
+
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<CommonResponseDTO<Void>> rejectAdmin(@PathVariable Long id, @Valid @RequestBody RejectRequest request) {
+        adminService.rejectAdmin(id, request.getReason());
         return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED);
     }
 
