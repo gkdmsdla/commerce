@@ -60,9 +60,12 @@ public class AdminService {
             throw new ServiceException(ErrorCode.WRONG_PW);
         }
 
-        if(!admin.getStatus().isLoginable()){
-            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
-        }
+
+
+//
+//        if(!admin.getStatus().isLoginable()){
+//            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
+//        }
 
         if(!admin.getStatus().isLoginable()){
             switch (admin.getStatus()) {
@@ -144,4 +147,19 @@ public class AdminService {
         admin.reject(reason);
     }
 
+    public GetAdminResponse getOne(long adminId) {
+        Admin admin = adminRepository.findById(adminId).orElseThrow(
+                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+
+        return new GetAdminResponse(
+                admin.getName(),
+                admin.getEmail(),
+                admin.getPhone(),
+                admin.getRole().getName(),
+                admin.getStatus().getTitle(),
+                admin.getCreatedAt(),
+                admin.getApprovedAt()
+        );
+    }
 }

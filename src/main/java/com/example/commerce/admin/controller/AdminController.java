@@ -43,7 +43,9 @@ public class AdminController {
         SessionAdmin sessionAdmin = new SessionAdmin(response);
 
         session.setAttribute("loginAdmin", sessionAdmin);
+
         session.setMaxInactiveInterval(120);// 자동 로그아웃 후 상태 변경 확인하기 위해 120초 설정
+
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
         //return ResponseEntity.status(HttpStatus.OK).body(response);
     }
@@ -52,7 +54,7 @@ public class AdminController {
     // Spring Security가 세션/토큰을 확인하여 ROLE_SUPER_ADMIN이 아니면 403을 반환.
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping
-    public ResponseEntity<Page<AdminDetailResponse>> getAdminList(
+    public ResponseEntity<CommonResponseDTO<Page<AdminDetailResponse>>> getAdminList(
             /*
             * RequestParam : URL 주소 뒤에 ? 를 붙이고, key=value 형태로 데이터 보내는 쿼리 스트림을
               Java의 변수로 자동 적용해주는 어노테이션
@@ -76,26 +78,46 @@ public class AdminController {
         Page<AdminDetailResponse> response = adminService.getAdminList(keyword, role, status, pageable);
 
         // 200 OK 상태 코드와 함께 데이터 반환
-        return ResponseEntity.ok(response);
+        //return ResponseEntity.ok(response);
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
 
         // 기본 조회 외의 내용이 있으면 추가
+    }
+
+    //수정 필요
+    //관리자 1명의 정보 상세조회
+    @PreAuthorize("#id == authentication.principal.id")
+    @GetMapping("/admins/{id}")
+    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(@PathVariable long id){
+        GetAdminResponse response = adminService.getOne(id);
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
+    }
+
+    // 그냥 내 정보 조회
+    //수정 필요
+    @PreAuthorize("hasRole('CS_ADMIN')")
+    @GetMapping("/admins")
+    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(@PathVariable long id, HttpSession session){
+        GetAdminResponse response = adminService.getOne(id);
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
     // 관리자 가입 승인 (슈퍼 관리자 전용)
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/{id}/approve")
-    public ResponseEntity<Void> approveAdmin(@PathVariable Long id) {
+    public ResponseEntity<CommonResponseDTO<Void>> approveAdmin(@PathVariable Long id) {
         adminService.approveAdmin(id);
-        return ResponseEntity.ok().build();
+        return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED);
     }
 
     // 자신의 정보 수정 (본인이거나 슈퍼 관리자일 경우)
     // #id는 URL의 {id}를 의미하며, principal.id는 로그인한 사용자의 ID를 의미합니다.
     @PreAuthorize("#id == authentication.principal.id or hasRole('SUPER_ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateAdminInfo(@PathVariable Long id, @RequestBody UpdateRequest request) {
+    public ResponseEntity<CommonResponseDTO<Void>> updateAdminInfo(@PathVariable Long id, @RequestBody UpdateRequest request) {
         // ... (서비스 호출)
-        return ResponseEntity.ok().build();
+        //return ResponseEntity.ok().build();
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);
     }
 
 }
