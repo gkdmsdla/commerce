@@ -6,10 +6,7 @@ import com.example.commerce.admin.repository.AdminRepository;
 import com.example.commerce.customer.entity.Customer;
 import com.example.commerce.customer.repository.CustomerRepository;
 import com.example.commerce.global.exception.ErrorCode;
-import com.example.commerce.order.dto.CreateAdminOrderRequest;
-import com.example.commerce.order.dto.CreateAdminOrderResponse;
-import com.example.commerce.order.dto.CreateOrderRequest;
-import com.example.commerce.order.dto.CreateOrderResponse;
+import com.example.commerce.order.dto.*;
 import com.example.commerce.order.entity.Order;
 import com.example.commerce.order.entity.OrderStatus;
 import com.example.commerce.order.repository.OrderRepository;
@@ -19,6 +16,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -114,5 +116,48 @@ public class OrderService {
 
     public long calculateTotalPrice(int quantity, int price) {
         return (long) quantity *price;
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<GetAllAdminOrderResponse> getAllByAdmin(){
+        List<Order> orders = orderRepository.findAll();
+        List<GetAllAdminOrderResponse> dtos = new ArrayList<>();
+
+        Customer customer = customerRepository.findCustomerById(sessionCustomerId);
+
+        for (Order order : orders) {
+            GetAllAdminOrderResponse dto = new GetAllAdminOrderResponse(
+                    order.getId(),
+                    order.getOrderNo(),
+                    order.getCustomer().getName,
+                    order.getProduct().getName(),
+                    order.getTotalPrice(),
+                    order.getStatus(),
+                    order.getCreatedAt(),
+                    order.getAdmin().getName(),
+                    order.getAdminRole
+            );
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<GetAllCustomerOrderResponse> getAllByCustomer(){
+        List<Order> orders = orderRepository.findAll();
+        List<GetAllCustomerOrderResponse> dtos = new ArrayList<>();
+
+        for (Order order : orders) {
+            GetAllCustomerOrderResponse dto = new GetAllAdminOrderResponse(
+                    order.getOrderNo(),
+                    order.getCustomer().getName(),
+                    order.getProduct().getName(),
+                    order.getStatus()
+            );
+            dtos.add(dto);
+        }
+        return dtos;
     }
 }

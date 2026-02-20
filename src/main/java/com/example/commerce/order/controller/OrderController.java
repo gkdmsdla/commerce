@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 @RestController
 public class OrderController {
@@ -51,14 +53,30 @@ public class OrderController {
 
 
     @GetMapping("/admin/orders")
-    ResponseEntity<GetAllAdminOrderResponse> getAll(
-            @RequestParam GetAllAdminOrderRequest request, HttpSession session) {
+    ResponseEntity<List<GetAllAdminOrderResponse>> getAllAdmin() {
+
         SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
         if (sessionAdmin == null) {
             throw new ServiceException(ErrorCode.BEFORE_LOGIN);
         }
 
-        GetAllAdminOrderResponse response = orderService.getByAdmin(sessionAdmin.getId(), request);
-        return ResponseEntity.ok(response);
+        GetAllAdminOrderResponse response = orderService.getAllByAdmin(sessionAdmin.getId(), request);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+
+    @GetMapping("/orders")
+    ResponseEntity<GetAllCustomerOrderResponse> getOneCustomer() {
+
+        SessionCustomer sessionCustomer = (SessionCustomer) session.getAttribute("loginAdmin");
+        if (sessionCustomer == null) {
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
+        GetAllCustomerOrderResponse response = orderService.getByCustomer(sessionCustomer.getId(), request);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+
+
 }
