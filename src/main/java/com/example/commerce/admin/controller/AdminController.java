@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,7 +38,7 @@ public class AdminController {
         SessionAdmin sessionAdmin = new SessionAdmin(response);
 
         session.setAttribute("loginAdmin", sessionAdmin);
-        session.setMaxInactiveInterval(86400); // 과제 내 세션 유효시간 에시가 24시간(86400초) 라서 수정
+        session.setMaxInactiveInterval(120); // 자동 로그아웃 후 상태 변경 확인하기 위해 120초 설정
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
@@ -46,14 +47,32 @@ public class AdminController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping
     public ResponseEntity<Page<AdminDetailResponse>> getAdminList(
+            /*
+            * RequestParam : URL 주소 뒤에 ? 를 붙이고, key=value 형태로 데이터 보내는 쿼리 스트림을
+              Java의 변수로 자동 적용해주는 어노테이션
+           *  required = false -> 검색조건에서 있어도, 없어도 상관없다면 false 로 되어있어야 에러 방지됨
+            (기본적으로 RequestParam 값은 클라이언트가 무조건 보내야 하기 때문)
+             */
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Role role,
             @RequestParam(required = false) AdminStatus status,
+            /*
+            defaultValue : 클라이언트가 파라미터를 보내지 않았을 때 기본으로 적용되는 값
+            페이징 처리 시 프론트엔드가 번호를 생략하면 1페이지부터 10개씩 보여줌
+             */
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        // ... (서비스 호출 및 응답)
-        return null;
+        // Pageable 객체 생성 (Spring Data JPA는 페이지가 0부터 시작하므로 -1 넣었음)
+        PageRequest pageable = PageRequest.of(page - 1, size);
+
+        //  서비스 로직 호출하여 데이터 가져오기
+        Page<AdminDetailResponse> response = adminService.getAdminList(keyword, role, status, pageable);
+
+        // 200 OK 상태 코드와 함께 데이터 반환
+        return ResponseEntity.ok(response);
+
+        // 기본 조회 외의 내용이 있으면 추가
     }
 
     // 관리자 가입 승인 (슈퍼 관리자 전용)
