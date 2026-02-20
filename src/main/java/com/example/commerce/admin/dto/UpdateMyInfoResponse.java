@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public class GetMyInfoResponse {
+public class UpdateMyInfoResponse {
     private final String myName;
     private final String myEmail;
     private final String myPhone;

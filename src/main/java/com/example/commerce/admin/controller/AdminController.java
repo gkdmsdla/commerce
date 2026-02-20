@@ -7,12 +7,13 @@ import com.example.commerce.admin.service.AdminService;
 import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
+import com.example.commerce.global.exception.ErrorCode;
+import com.example.commerce.global.exception.ServiceException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,9 +42,7 @@ public class AdminController {
         LoginResponse response= adminService.login(request);
 
         SessionAdmin sessionAdmin = new SessionAdmin(response);
-
         session.setAttribute("loginAdmin", sessionAdmin);
-
         session.setMaxInactiveInterval(120);// 자동 로그아웃 후 상태 변경 확인하기 위해 120초 설정
 
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
@@ -95,12 +94,32 @@ public class AdminController {
 
     // 그냥 내 정보 조회
     //수정 필요
-    @PreAuthorize("hasRole('CS_ADMIN')")
+    @PreAuthorize("hasRole('CS_ADMIN')") // 딱히 필요없을지도,,, 관리자가 로그인 되어있는지 Session 으로 확인하니까
     @GetMapping("/admins/me")
-    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(HttpSession session){
-        GetAdminResponse response = adminService.getOne(id);
+    public ResponseEntity<CommonResponseDTO<GetMyInfoResponse>> getOne(HttpSession session){
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("longinAdmin");
+        if (sessionAdmin == null){
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
+        GetMyInfoResponse response = adminService.getMyInfo(sessionAdmin.getId());
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
+
+    // 그냥 내 정보 수정
+    @PutMapping("/admins/me")
+    public ResponseEntity<CommonResponseDTO<UpdateMyInfoResponse>> updateMe(
+            @Valid @RequestBody UpdateMyInfoRequest request, HttpSession session){
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("longinAdmin");
+        if (sessionAdmin == null){
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
+        UpdateMyInfoResponse response = adminService.updateMyInfo(sessionAdmin.getId(), request);
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
+    }
+
+
 
     // 관리자 가입 승인 (슈퍼 관리자 전용)
     @PreAuthorize("hasRole('SUPER_ADMIN')")
@@ -110,14 +129,16 @@ public class AdminController {
         return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED);
     }
 
-    // 자신의 정보 수정 (본인이거나 슈퍼 관리자일 경우)
+    // 관리자 정보 수정 (본인이거나 슈퍼 관리자일 경우)
     // #id는 URL의 {id}를 의미하며, principal.id는 로그인한 사용자의 ID를 의미합니다.
     @PreAuthorize("#id == authentication.principal.id or hasRole('SUPER_ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<CommonResponseDTO<Void>> updateAdminInfo(@PathVariable Long id, @RequestBody UpdateRequest request) {
+    public ResponseEntity<CommonResponseDTO<UpdateAdminResponse>> updateAdminInfo(@PathVariable Long id, @RequestBody UpdateAdminRequest request) {
+
+        UpdateAdminResponse response = adminService.updateAdminInfo(id, request);
         // ... (서비스 호출)
         //return ResponseEntity.ok().build();
-        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED,response);
     }
 
 }

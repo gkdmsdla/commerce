@@ -60,8 +60,6 @@ public class AdminService {
             throw new ServiceException(ErrorCode.WRONG_PW);
         }
 
-
-
 //
 //        if(!admin.getStatus().isLoginable()){
 //            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
@@ -121,7 +119,7 @@ public class AdminService {
     }
     // 관리자 정보/내 프로필 수정
     @Transactional
-    public void updateAdminInfo(Long adminId, UpdateRequest request) {
+    public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request) {
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
 
@@ -132,6 +130,12 @@ public class AdminService {
 
         // 엔티티 내부의 수정 메서드 호출 (Dirty Checking)
         admin.update(request.getName(), request.getEmail(), request.getPhone());
+
+        return new UpdateAdminResponse(
+                admin.getName(),
+                admin.getEmail(),
+                admin.getPhone()
+        );
     }
 
     @Transactional
@@ -160,6 +164,38 @@ public class AdminService {
                 admin.getStatus().getTitle(),
                 admin.getCreatedAt(),
                 admin.getApprovedAt()
+        );
+    }
+
+    public GetMyInfoResponse getMyInfo(Long sessionAdminId) {
+        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
+                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+
+        return new GetMyInfoResponse(
+                admin.getName(),
+                admin.getEmail(),
+                admin.getPhone()
+        );
+    }
+
+    public UpdateMyInfoResponse updateMyInfo(Long sessionAdminId, UpdateMyInfoRequest request) {
+        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
+                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+
+        // 중복 email 이라면 throw 중복 EMAIL 오류
+        if(adminRepository.existsByEmail(request.getMyEmail())){
+            throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
+        }
+
+        //Update, 위에서 repository 에 갔다왔으므로 자동 update 가 가능
+        admin.update(request.getMyName(), request.getMyEmail(), request.getMyPhone());
+
+        return new UpdateMyInfoResponse(
+                admin.getName(),
+                admin.getEmail(),
+                admin.getPhone()
         );
     }
 }
