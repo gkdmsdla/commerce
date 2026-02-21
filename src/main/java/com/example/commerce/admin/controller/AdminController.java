@@ -39,12 +39,15 @@ public class AdminController {
             @Valid @RequestBody LoginRequest request,
             HttpSession session
     ){
+        //response 를 받아와서
         LoginResponse response= adminService.login(request);
 
+        //controller 에서 sessionAdmin 조립, 등록
         SessionAdmin sessionAdmin = new SessionAdmin(response);
         session.setAttribute("loginAdmin", sessionAdmin);
         session.setMaxInactiveInterval(120);// 자동 로그아웃 후 상태 변경 확인하기 위해 120초 설정
 
+        //받아온 response 를 Data 로 넣어서 반환
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
         //return ResponseEntity.status(HttpStatus.OK).body(response);
     }

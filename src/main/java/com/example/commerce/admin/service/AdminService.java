@@ -59,10 +59,15 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
+        // 이메일 자체가 존재하지 않는다면 404 오류 반환
         Admin admin = adminRepository.findByEmail(request.getEmail()).orElseThrow(
                 ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
         );
 
+        // 위에서 튕기지 않았다면 email 은 존재하는게 되니까
+        // 해당 email 을 기반으로 찾은 admin 에 등록된 pw 와
+        // request 에서 입력받은 pw 가 동일한지 확인
+        // 틀렸다면 401 (unauthorized) 오류 반환
         if(!passwordEncoder.matches(request.getPassword(), admin.getPassword())){
             throw new ServiceException(ErrorCode.WRONG_PW);
         }
