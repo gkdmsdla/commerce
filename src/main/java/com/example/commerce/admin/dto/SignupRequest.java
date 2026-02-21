@@ -25,5 +25,5 @@ public class SignupRequest {
     private String phone;
 
     //Enum 에 등록된 역할만 입력받았는지 확인
-    private Role role;
+    private String role; // 일단 String 으로 role 받고 Service 에서 확인
 }

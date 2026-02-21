@@ -23,21 +23,28 @@ public class AdminService {
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
+        // request 로 들어온 email 이 이미 존재하는지 확인,
+        // 존재한다면 DUPLICATE_EMAIL 409 conflict 에러 발생시킴
         if (adminRepository.existsByEmail(request.getEmail())){
             throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }
 
+        // 비밀번호는 암호화 후 저장됨
         String encodedPassword = passwordEncoder.encode(request.getPassword());
+
+        //request 에서 string 으로 들어온 role 값을 enum 타입으로 변환
+        Role role = Role.from(request.getRole());
 
         Admin admin = new Admin(
                 request.getName(),
                 request.getEmail(),
                 encodedPassword,
                 request.getPhone(),
-                request.getRole(),
-                AdminStatus.PENDING
+                role,
+                AdminStatus.PENDING // 새로 생성되는 관리자의 상태는 모두 승인 대기중
         );
 
+        // DB에 저장
         Admin savedAdmin = adminRepository.save(admin);
 
         return new SignupResponse(
@@ -65,15 +72,17 @@ public class AdminService {
 //            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
 //        }
 
-        if(!admin.getStatus().isLoginable()){
-            switch (admin.getStatus()) {
-                case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
-                case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
-                case STOPPED -> throw new ServiceException(ErrorCode.ADMIN_STOPPED);   // "계정 정지됨"
-                case INACTIVE -> throw new ServiceException(ErrorCode.ADMIN_INACTIVE); // "계정 비활성화됨"
-                default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
-            }
-        }
+//        if(!admin.getStatus().isLoginable()){
+//            switch (admin.getStatus()) {
+//                case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
+//                case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
+//                case STOPPED -> throw new ServiceException(ErrorCode.ADMIN_STOPPED);   // "계정 정지됨"
+//                case INACTIVE -> throw new ServiceException(ErrorCode.ADMIN_INACTIVE); // "계정 비활성화됨"
+//                default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
+//            }
+//        }
+        isActiveAdmin(admin); // 관리자가 활성 상태인지 확인
+        // 위와 같은 코드인데 이후 코드에서도 계속 사용할 것 같아서 method 로 분리했습니다!
 
         return new LoginResponse(
                 admin.getId(),
@@ -110,16 +119,31 @@ public class AdminService {
         return admins.map(AdminDetailResponse::from);
     }
 
+    // 개별 관리자의 상세정보 조회
     @Transactional(readOnly = true)
-    public AdminDetailResponse getAdminDetail(Long adminId) {
+    public AdminDetailResponse getAdminDetail(Long adminId, Long sessionAdminId) {
+        Admin loginAdmin = adminRepository.findById(sessionAdminId).orElseThrow(
+                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+
+        isActiveAdmin(loginAdmin);
+
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+
+
 
         return AdminDetailResponse.from(admin);
     }
     // 관리자 정보/내 프로필 수정
     @Transactional
-    public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request) {
+    public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request, Long sessionAdminId) {
+        Admin loginAdmin = adminRepository.findById(sessionAdminId).orElseThrow(
+                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+
+        isActiveAdmin(loginAdmin);
+
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
 
@@ -197,5 +221,19 @@ public class AdminService {
                 admin.getEmail(),
                 admin.getPhone()
         );
+    }
+
+    // 관리자가 활성상태가 맞는지 확인하는 로직
+    public void isActiveAdmin(Admin admin){
+        //isLoginable 은 활성(Active) 상태에서만 true 니까 활성상태가 아니라면 throw
+        if(!admin.getStatus().isLoginable()){
+            switch (admin.getStatus()) {
+                case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
+                case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
+                case STOPPED -> throw new ServiceException(ErrorCode.ADMIN_STOPPED);   // "계정 정지됨"
+                case INACTIVE -> throw new ServiceException(ErrorCode.ADMIN_INACTIVE); // "계정 비활성화됨"
+                default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
+            }
+        }
     }
 }

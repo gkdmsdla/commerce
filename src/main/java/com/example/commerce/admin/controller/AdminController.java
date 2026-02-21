@@ -87,8 +87,13 @@ public class AdminController {
     //관리자 1명의 정보 상세조회
     @PreAuthorize("hasRole('CS_ADMIN')")
     @GetMapping("/admins/{id}")
-    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getOne(@PathVariable long id){
-        AdminDetailResponse response = adminService.getAdminDetail(id);
+    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getOne(@PathVariable long id, HttpSession session){
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
+        if (sessionAdmin == null) {
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
+        AdminDetailResponse response = adminService.getAdminDetail(id, sessionAdmin.getId());
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
@@ -140,10 +145,16 @@ public class AdminController {
     // #id는 URL의 {id}를 의미하며, principal.id는 로그인한 사용자의 ID를 의미합니다.
     @PreAuthorize("#id == authentication.principal.id or hasRole('SUPER_ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<CommonResponseDTO<UpdateAdminResponse>> updateAdminInfo(@PathVariable Long id, @RequestBody UpdateAdminRequest request) {
+    public ResponseEntity<CommonResponseDTO<UpdateAdminResponse>> updateAdminInfo(
+            @PathVariable Long id, @RequestBody UpdateAdminRequest request,
+            HttpSession session) {
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("longinAdmin");
+        if (sessionAdmin == null){
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
 
-        UpdateAdminResponse response = adminService.updateAdminInfo(id, request);
-        // ... (서비스 호출)
+        UpdateAdminResponse response = adminService.updateAdminInfo(id, request,sessionAdmin.getId());
+        // ... (서비스 호출) -> 수정했습니다~
         //return ResponseEntity.ok().build();
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED,response);
     }
