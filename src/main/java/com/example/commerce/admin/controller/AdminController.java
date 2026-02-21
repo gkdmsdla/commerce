@@ -97,7 +97,8 @@ public class AdminController {
     //관리자 1명의 정보 상세조회
     @PreAuthorize("hasRole('CS_ADMIN')")
     @GetMapping("/admins/{id}")
-    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getOne(@PathVariable long id, HttpSession session){
+    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getOne(
+            @PathVariable long id, HttpSession session){
         SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
         if (sessionAdmin == null) {
             throw new ServiceException(ErrorCode.BEFORE_LOGIN);
@@ -139,16 +140,30 @@ public class AdminController {
     // 관리자 가입 승인 (슈퍼 관리자 전용)
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/{id}/approve")
-    public ResponseEntity<CommonResponseDTO<Void>> approveAdmin(@PathVariable Long id) {
-        adminService.approveAdmin(id);
+    public ResponseEntity<CommonResponseDTO<Void>> approveAdmin(
+            @PathVariable Long id, HttpSession session) {
+        //관리자 로그인 확인
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("longinAdmin");
+        if (sessionAdmin == null){
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
+        adminService.approveAdmin(id, sessionAdmin.getId());
         return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED);
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping("/{id}/reject")
-    public ResponseEntity<CommonResponseDTO<Void>> rejectAdmin(@PathVariable Long id, @Valid @RequestBody RejectRequest request) {
-        adminService.rejectAdmin(id, request.getReason());
-        return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED);
+    public ResponseEntity<CommonResponseDTO<RejectResponse>> rejectAdmin(
+            @PathVariable Long id, @Valid @RequestBody RejectRequest request, HttpSession session) {
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("longinAdmin");
+        if (sessionAdmin == null){
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
+        RejectResponse response = adminService.rejectAdmin(id, request, sessionAdmin.getId());
+        //string 을 빼서 사용하는건 service 한테 맡겼습니다~
+        return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED, response);
     }
 
     // 관리자 정보 수정 (본인이거나 슈퍼 관리자일 경우)

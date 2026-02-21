@@ -102,10 +102,16 @@ public class AdminService {
 
     // 관리자 승인 (JPA 변경 감지 활용)
     @Transactional
-    public void approveAdmin(Long adminId) {
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+    public void approveAdmin(Long adminId, Long sessionAdminId) {
+        //현재 승인 또는 거부하려는 슈퍼관리자가 존재하며, 활성상태인지 확인
+        isActiveAdmin(getAdminById(sessionAdminId));
 
+        // 승인 또는 거부하려는 대상 관리자가 존재하는지 확인
+        Admin admin = getAdminById(adminId);
+//        Admin admin = adminRepository.findById(adminId)
+//                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+
+        // 승인 또는 거부하려는 대상 관리자가 승인 대기 상태인지 확인
         if (admin.getStatus() != AdminStatus.PENDING) {
             throw new ServiceException(ErrorCode.INVALID_STATUS); // 대기 상태가 아니면 승인 불가
         }
@@ -130,16 +136,10 @@ public class AdminService {
     // 개별 관리자의 상세정보 조회
     @Transactional(readOnly = true)
     public AdminDetailResponse getAdminDetail(Long adminId, Long sessionAdminId) {
-        Admin loginAdmin = adminRepository.findById(sessionAdminId).orElseThrow(
-                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-        );
+        isActiveAdmin(getAdminById(sessionAdminId)); // 로그인 한 관리자가 활성상태인지 확인
 
-        isActiveAdmin(loginAdmin);
-
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
-
-
+        // 찾으려는 관리자가 존재하는지 확인
+        Admin admin = getAdminById(adminId);
 
         return AdminDetailResponse.from(admin);
     }
@@ -171,16 +171,29 @@ public class AdminService {
     }
 
     @Transactional
-    public void rejectAdmin(Long adminId, String reason) {
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+    public RejectResponse rejectAdmin(Long adminId, RejectRequest request, Long sessionAdminId) {
+        //현재 승인 또는 거부하려는 슈퍼관리자가 존재하며, 활성상태인지 확인
+        isActiveAdmin(getAdminById(sessionAdminId));
 
+        // 승인 또는 거부하려는 대상 관리자가 존재하는지 확인
+        Admin admin = getAdminById(adminId);
+//        Admin admin = adminRepository.findById(adminId)
+//                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+
+        // 승인 또는 거부하려는 대상 관리자가 승인 대기 상태인지 확인
         if (admin.getStatus() != AdminStatus.PENDING) {
-            throw new ServiceException(ErrorCode.INVALID_STATUS); // "승인 대기 상태가 아닙니다" 에러 추가 필요
+            throw new ServiceException(ErrorCode.INVALID_STATUS); // 대기 상태가 아니면 승인 불가
         }
 
         // 엔티티 내부의 거부 메서드 호출 (상태 변경 및 거부 사유, 거부일시 저장)
-        admin.reject(reason);
+        admin.reject(request.getReason());
+
+        return new RejectResponse(
+                admin.getId(),
+                admin.getRole(),
+                admin.getRejectReason(),
+                admin.getRejectedAt()
+        );
     }
 
 //    public GetAdminResponse getOne(long adminId) {
