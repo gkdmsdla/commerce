@@ -63,11 +63,11 @@ public class OrderService {
         );
     }
 
+    @Transactional
     public CreateAdminOrderResponse createByAdmin(Long sessionAdminId, CreateAdminOrderRequest request) {
         // 관리자가 존재하는지
-        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
-                () -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-        );
+        Admin admin = getAdminById(sessionAdminId);
+        isActiveAdmin(admin);
 
         // 관리자가 주문 관련 자격이 있는지 ...
         // 추가 필요
@@ -116,28 +116,27 @@ public class OrderService {
 
     // 주문 단 건 조회 (관리자용)
     public GetOneAdminOrderResponse getOneAdminOrder(Long orderId, Long sessionAdminId) {
+
+        isActiveAdmin(getAdminById(sessionAdminId));
+
         Order order = orderRepository.findById(orderId)
                 .orElseTrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
 
-        // 관리자 로그인 체크
-        if (sessionAdminId == null) {
-            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
-        }
 
-        Order newOrder = orderRepository.save(order);
+        //Order newOrder = orderRepository.save(order);
 
         return new GetOneAdminOrderResponse(
-                newOrder.getOrderNo(),
-                newOrder.getQuantity(),
+                order.getOrderNo(),
+                order.getQuantity(),
                 OrderStatus.PREPARING,
-                newOrder.getCustomer().getName(),
-                newOrder.getCustomer().getEmail(),
-                newOrder.getProduct().getName(),
-                newOrder.getProduct().getPrice(),
-                newOrder.getCreatedAt(),
-                newOrder.getAdmin().getName(),
-                newOrder.getAdmin().getEmail(),
-                newOrder.getAdmin().getRole()
+                order.getCustomer().getName(),
+                order.getCustomer().getEmail(),
+                order.getProduct().getName(),
+                order.getProduct().getPrice(),
+                order.getCreatedAt(),
+                order.getAdmin().getName(),
+                order.getAdmin().getEmail(),
+                order.getAdmin().getRole()
         );
     }
 
@@ -151,18 +150,37 @@ public class OrderService {
             throw new ServiceException(ErrorCode.CUSTOMER_MISMATCH);
         }
 
-        Order newOrder = orderRepository.save(order);
+        // Order newOrder = orderRepository.save(order);
 
         return new GetOneOrderResponse(
-                newOrder.getOrderNo(),
-                newOrder.getQuantity(),
+                order.getOrderNo(),
+                order.getQuantity(),
                 OrderStatus.PREPARING,
-                newOrder.getCustomer().getName(),
-                newOrder.getCustomer().getEmail(),
-                newOrder.getProduct().getName(),
-                newOrder.getProduct().getPrice(),
-                newOrder.getCreatedAt()
+                order.getCustomer().getName(),
+                order.getCustomer().getEmail(),
+                order.getProduct().getName(),
+                order.getProduct().getPrice(),
+                order.getCreatedAt()
         );
+    }
+    public Admin getAdminById(long adminId){
+        return adminRepository.findById(adminId).orElseThrow(
+                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+    }
+
+    // 관리자가 활성상태가 맞는지 확인하는 로직
+    public void isActiveAdmin(Admin admin){
+        //isLoginable 은 활성(Active) 상태에서만 true 니까 활성상태가 아니라면 throw
+        if(!admin.getStatus().isLoginable()){
+            switch (admin.getStatus()) {
+                case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
+                case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
+                case STOPPED -> throw new ServiceException(ErrorCode.ADMIN_STOPPED);   // "계정 정지됨"
+                case INACTIVE -> throw new ServiceException(ErrorCode.ADMIN_INACTIVE); // "계정 비활성화됨"
+                default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
+            }
+        }
     }
 
 }

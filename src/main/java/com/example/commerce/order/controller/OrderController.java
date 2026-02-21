@@ -37,7 +37,7 @@ public class OrderController {
         return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
     }
 
-    @PostMapping("admin/orders")
+    @PostMapping("admins/orders")
     ResponseEntity<CommonResponseDTO<CreateAdminOrderResponse>> create(
             @Valid @RequestBody CreateAdminOrderRequest request, HttpSession session) {
         //관리자 주문
@@ -55,7 +55,7 @@ public class OrderController {
 
 
     // 단건 주문 조회 (관리자)
-    @GetMapping("admin/orders/{id}")
+    @GetMapping("admins/orders/{id}")
     ResponseEntity<CommonResponseDTO<GetOneAdminOrderResponse>> getOne(
             @PathVariable("id") Long orderId,
             HttpSession session) {
