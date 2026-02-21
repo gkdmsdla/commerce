@@ -213,9 +213,11 @@ public class AdminService {
 //    }
 
     public GetMyInfoResponse getMyInfo(Long sessionAdminId) {
-        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
-                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-        );
+        //로그인 session 에 있는 id 가 DB 에도 존재하고 있는지 재확인
+        Admin admin = getAdminById(sessionAdminId);
+//        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
+//                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+//        );
 
         return new GetMyInfoResponse(
                 admin.getName(),
@@ -225,11 +227,16 @@ public class AdminService {
     }
 
     public UpdateMyInfoResponse updateMyInfo(Long sessionAdminId, UpdateMyInfoRequest request) {
-        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
-                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-        );
+        //로그인 session 에 있는 id 가 DB 에도 존재하고 있는지 재확인
+        Admin admin = getAdminById(sessionAdminId);
+//        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
+//                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+//        );
 
-        // 중복 email 이라면 throw 중복 EMAIL 오류
+        isActiveAdmin(admin); // 수정은 활성상태의 관리자만 가능
+
+        // request 로 들어온 수정 목표 email 이 이미 존재하는지 확인,
+        // 존재한다면 DUPLICATE_EMAIL 409 conflict 에러 발생시킴
         if(adminRepository.existsByEmail(request.getMyEmail())){
             throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }

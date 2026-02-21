@@ -123,6 +123,7 @@ public class AdminController {
     }
 
     // 그냥 내 정보 수정
+    @PreAuthorize("hasRole('CS_ADMIN')")
     @PutMapping("/admins/me")
     public ResponseEntity<CommonResponseDTO<UpdateMyInfoResponse>> updateMe(
             @Valid @RequestBody UpdateMyInfoRequest request, HttpSession session){
