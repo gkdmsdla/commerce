@@ -146,11 +146,13 @@ public class AdminService {
     // 관리자 정보/내 프로필 수정
     @Transactional
     public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request, Long sessionAdminId) {
-        Admin loginAdmin = adminRepository.findById(sessionAdminId).orElseThrow(
-                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-        );
-
-        isActiveAdmin(loginAdmin);
+        isActiveAdmin(getAdminById(sessionAdminId));
+//
+//        Admin loginAdmin = adminRepository.findById(sessionAdminId).orElseThrow(
+//                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+//        );
+//
+//        isActiveAdmin(loginAdmin);
 
         Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
@@ -237,12 +239,12 @@ public class AdminService {
 
         // request 로 들어온 수정 목표 email 이 이미 존재하는지 확인,
         // 존재한다면 DUPLICATE_EMAIL 409 conflict 에러 발생시킴
-        if(adminRepository.existsByEmail(request.getMyEmail())){
+        if(adminRepository.existsByEmail(request.getEmail())){
             throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         //Update, 위에서 repository 에 갔다왔으므로 자동 update 가 가능
-        admin.update(request.getMyName(), request.getMyEmail(), request.getMyPhone());
+        admin.update(request.getName(), request.getEmail(), request.getPhone());
 
         return new UpdateMyInfoResponse(
                 admin.getName(),
