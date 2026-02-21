@@ -1,5 +1,8 @@
 package com.example.commerce.order.controller;
 
+import com.example.commerce.global.common.CommonResponseDTO;
+import com.example.commerce.global.common.CommonResponseHandler;
+import com.example.commerce.global.common.SuccessCode;
 import com.example.commerce.order.dto.*;
 import lombok.RequiredArgsConstructor;
 import com.example.commerce.admin.dto.SessionAdmin;
@@ -20,7 +23,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/orders")
-    ResponseEntity<CreateOrderResponse> create(
+    ResponseEntity<CommonResponseDTO<CreateOrderResponse>> create(
             @Valid @RequestBody CreateOrderRequest request, HttpSession session) {
         //고객이 주문
         // 세션에서 customer 정보를 빼와야됨
@@ -31,11 +34,11 @@ public class OrderController {
 
         CreateOrderResponse response = orderService.create(sessionCustomer.getId(), request);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
     }
 
     @PostMapping("admin/orders")
-    ResponseEntity<CreateAdminOrderResponse> create(
+    ResponseEntity<CommonResponseDTO<CreateAdminOrderResponse>> create(
             @Valid @RequestBody CreateAdminOrderRequest request, HttpSession session) {
         //관리자 주문
         // 세션에서 admin 정보를 빼와야됨
@@ -46,13 +49,14 @@ public class OrderController {
         }
 
         CreateAdminOrderResponse response = orderService.createByAdmin(sessionAdmin.getId(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
     }
 
 
     // 단건 주문 조회 (관리자)
     @GetMapping("admin/orders/{id}")
-    ResponseEntity<GetOneAdminOrderResponse> getOne(
+    ResponseEntity<CommonResponseDTO<GetOneAdminOrderResponse>> getOne(
             @PathVariable("id") Long orderId,
             HttpSession session) {
 
@@ -63,12 +67,12 @@ public class OrderController {
 
         GetOneAdminOrderResponse response = orderService.getOneAdminOrder(orderId, sessionAdmin.getId());
 
-        return ResponseEntity.ok(response);
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
     // 단건 주문 조회 (고객)
     @GetMapping("orders/{id}")
-    ResponseEntity<GetOneOrderResponse> getOneOrder(
+    ResponseEntity<CommonResponseDTO<GetOneOrderResponse>> getOneOrder(
             @PathVariable("id") Long orderId,
             HttpSession session) {
 
@@ -79,7 +83,6 @@ public class OrderController {
 
         GetOneOrderResponse response = orderService.getOneOrder(orderId, sessionCustomer.getId());
 
-        return ResponseEntity.ok(response);
-
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 }
