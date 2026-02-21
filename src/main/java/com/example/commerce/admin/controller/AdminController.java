@@ -55,7 +55,7 @@ public class AdminController {
     // 관리자 리스트 조회 (슈퍼 관리자 전용)
     // Spring Security가 세션/토큰을 확인하여 ROLE_SUPER_ADMIN이 아니면 403을 반환.
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @GetMapping
+    @GetMapping("/admins") //endpoint 수정 (by 권지원, at 02/21 12:35)
     public ResponseEntity<CommonResponseDTO<Page<AdminDetailResponse>>> getAdminList(
             /*
             * RequestParam : URL 주소 뒤에 ? 를 붙이고, key=value 형태로 데이터 보내는 쿼리 스트림을
@@ -71,13 +71,20 @@ public class AdminController {
             페이징 처리 시 프론트엔드가 번호를 생략하면 1페이지부터 10개씩 보여줌
              */
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+
+            HttpSession session
     ) {
         // Pageable 객체 생성 (Spring Data JPA는 페이지가 0부터 시작하므로 -1 넣었음)
         PageRequest pageable = PageRequest.of(page - 1, size);
 
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
+        if (sessionAdmin == null) {
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
         //  서비스 로직 호출하여 데이터 가져오기
-        Page<AdminDetailResponse> response = adminService.getAdminList(keyword, role, status, pageable);
+        Page<AdminDetailResponse> response = adminService.getAdminList(sessionAdmin.getId(),keyword, role, status, pageable);
 
         // 200 OK 상태 코드와 함께 데이터 반환
         //return ResponseEntity.ok(response);

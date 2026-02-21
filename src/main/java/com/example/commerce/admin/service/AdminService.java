@@ -116,7 +116,10 @@ public class AdminService {
 
         //관리자 리스트 페이징 조회
     @Transactional(readOnly = true)
-    public Page<AdminDetailResponse> getAdminList(String keyword, Role role, AdminStatus status, Pageable pageable) {
+    public Page<AdminDetailResponse> getAdminList(long sessionAdminId, String keyword, Role role, AdminStatus status, Pageable pageable) {
+        //admin id 로 admin 을 찾고, 활성상태인지 확인
+        isActiveAdmin(getAdminById(sessionAdminId));
+
         // 1. Repository의 동적 쿼리를 호출하여 엔티티 페이징 객체를 가져옴
         Page<Admin> admins = adminRepository.searchAdmins(keyword, role, status, pageable);
 
@@ -225,6 +228,12 @@ public class AdminService {
                 admin.getName(),
                 admin.getEmail(),
                 admin.getPhone()
+        );
+    }
+
+    public Admin getAdminById(long adminId){
+        return adminRepository.findById(adminId).orElseThrow(
+                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
         );
     }
 
