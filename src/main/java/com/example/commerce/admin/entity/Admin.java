@@ -67,4 +67,14 @@ public class Admin extends BaseEntity {
         this.rejectedAt = LocalDateTime.now();
         this.rejectReason = reason;
     }
+
+    //  관리자 역할 및 상태 변경 로직
+
+    public void updateRole(Role newRole) {
+        this.role = newRole;
+    }
+
+    public void updateStatus(AdminStatus newStatus) {
+        this.status = newStatus;
+    }
 }

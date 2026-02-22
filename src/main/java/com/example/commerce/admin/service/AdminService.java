@@ -238,8 +238,9 @@ public class AdminService {
         isActiveAdmin(admin); // 수정은 활성상태의 관리자만 가능
 
         // request 로 들어온 수정 목표 email 이 이미 존재하는지 확인,
+        // 입력 메일이 자신의 기존 가입 이메일과 같으면 통과, 아니라면 존재하는 다른 이메일과 중복되는지 검사
         // 존재한다면 DUPLICATE_EMAIL 409 conflict 에러 발생시킴
-        if(adminRepository.existsByEmail(request.getEmail())){
+        if (!admin.getEmail().equals(request.getEmail()) && adminRepository.existsByEmail(request.getEmail())) {
             throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }
 
@@ -271,5 +272,37 @@ public class AdminService {
                 default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
             }
         }
+    }
+
+    @Transactional
+    public void updateAdminRole(Long targetId, String roleString, Long sessionAdminId) {
+        isActiveAdmin(getAdminById(sessionAdminId)); // 슈퍼관리자 활성 상태 검사
+        Admin admin = getAdminById(targetId);
+
+        // String으로 받아서 Role.from()으로 치환
+        Role newRole = Role.from(roleString);
+        admin.updateRole(newRole);
+    }
+
+    @Transactional
+    public void updateAdminStatus(Long targetId, String statusString, Long sessionAdminId) {
+        isActiveAdmin(getAdminById(sessionAdminId));
+        Admin admin = getAdminById(targetId);
+
+        try {
+            AdminStatus newStatus = AdminStatus.valueOf(statusString.toUpperCase());
+            admin.updateStatus(newStatus);
+        } catch (IllegalArgumentException e) {
+            throw new ServiceException(ErrorCode.INVALID_STATUS); // 상태값 파싱 실패 시 에러
+        }
+    }
+
+    @Transactional
+    public void deleteAdmin(Long targetId, Long sessionAdminId) {
+        isActiveAdmin(getAdminById(sessionAdminId));
+        Admin admin = getAdminById(targetId);
+
+        // Soft Delete 로직
+        admin.updateStatus(AdminStatus.INACTIVE);
     }
 }

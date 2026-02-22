@@ -14,5 +14,5 @@ public enum AdminStatus {
     REJECTED("거부", false);
 
     private final String title;
-    private final boolean loginable; // 이미지 2의 [로그인 처리] 요구사항 반영
+    private final boolean loginable; // [로그인 처리] 반영
 }
