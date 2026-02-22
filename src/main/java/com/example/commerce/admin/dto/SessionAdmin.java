@@ -2,6 +2,7 @@ package com.example.commerce.admin.dto;
 
 import com.example.commerce.admin.entity.Role;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
 public class SessionAdmin {

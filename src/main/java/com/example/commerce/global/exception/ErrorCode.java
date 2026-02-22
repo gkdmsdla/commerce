@@ -30,7 +30,9 @@ public enum ErrorCode {
     ADMIN_REJECTED(HttpStatus.FORBIDDEN, "E014", "계정 신청이 거부되었습니다."),
     ADMIN_STOPPED(HttpStatus.FORBIDDEN, "E015", "정지된 계정입니다."),
     ADMIN_INACTIVE(HttpStatus.FORBIDDEN, "E016", "비활성화된 계정입니다."),
-    INVALID_STATUS(HttpStatus.BAD_REQUEST, "E017", "해당 작업을 수행할 수 없는 계정 상태입니다."),
+    INVALID_STATUS(HttpStatus.BAD_REQUEST, "E017", "해당 작업을 수행할 수 없는 상태입니다."),
+
+    INVALID_ROLE(HttpStatus.BAD_REQUEST, "E018", "유효하지 않은 직책입니다."),
 
     //공통에러는 C 로 시작
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "잘못된 입력값입니다,"),
