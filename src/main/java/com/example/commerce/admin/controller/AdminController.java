@@ -76,6 +76,17 @@ public class AdminController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
 
+            // 정렬 기준 추가했습니당
+            // request param 이름 -> sort
+            // sort 가 null 이거나 기준을 못찾겠다 싶으면 role ASC 로 출력하도록 했고
+            // email 이나 createdAt 으로도 출력되게 했어요
+            //@RequestParam(required = false) String sort,
+            // 오름차순으로 할지, 내림차순으로 할지도 추가하겠습니다~
+            // request param 이름 -> desc
+            // boolean 값으로 받아서 false or NULL -> 오름차순
+            // true 이면 내림차순으로 출력할게요!
+            //@RequestParam(required = false) boolean desc,
+
             HttpSession session
     ) {
         //SessionAdmin 리팩터링 (과제 3 내 정렬기준, 순서 기능 추가 및 최적화)
@@ -96,9 +107,14 @@ public class AdminController {
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
         Page<AdminDetailResponse> response = adminService.getAdminList(sessionAdmin.getId(), keyword, role, status, pageable);
 
+        // 200 OK 상태 코드와 함께 데이터 반환
+        //return ResponseEntity.ok(response);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
+
+        // 기본 조회 외의 내용이 있으면 추가
     }
 
+    //수정 필요
     //관리자 1명의 정보 상세조회
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/admins/{id}")
