@@ -33,6 +33,5 @@ public enum Role {
         }
 
         throw new ServiceException(ErrorCode.INVALID_ROLE);
-
     }
 }

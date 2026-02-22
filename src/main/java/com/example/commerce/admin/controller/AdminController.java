@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -74,10 +75,28 @@ public class AdminController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
 
+            // 정렬 기준 추가했습니당
+            // request param 이름 -> sort
+            // sort 가 null 이거나 기준을 못찾겠다 싶으면 role ASC 로 출력하도록 했고
+            // email 이나 createdAt 으로도 출력되게 했어요
+            @RequestParam(required = false) String sort,
+            // 오름차순으로 할지, 내림차순으로 할지도 추가하겠습니다~
+            // request param 이름 -> desc
+            // boolean 값으로 받아서 false or NULL -> 오름차순
+            // true 이면 내림차순으로 출력할게요!
+            @RequestParam(required = false) boolean desc,
+
             HttpSession session
     ) {
         // Pageable 객체 생성 (Spring Data JPA는 페이지가 0부터 시작하므로 -1 넣었음)
-        PageRequest pageable = PageRequest.of(page - 1, size);
+
+        // order by 추가하겠습니다~~
+        Sort.Direction direction = (desc)? Sort.Direction.DESC:Sort.Direction.ASC;
+        String sortValue = "role";
+        if ("email".equals(sort)) sortValue = "email";
+        else if ("createdAt".equals(sort)) sortValue = "createdAt";
+
+        PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
 
         SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
         if (sessionAdmin == null) {
