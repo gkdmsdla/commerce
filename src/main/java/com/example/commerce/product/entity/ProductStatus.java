@@ -1,4 +1,4 @@
-package com.example.commerce.admin.entity;
+package com.example.commerce.product.entity;
 
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
@@ -7,18 +7,14 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum AdminStatus {
-    // [명칭, 로그인 가능 여부]
-    PENDING("승인대기", false),
-    ACTIVE("활성", true),
-    INACTIVE("비활성", false),
-    STOPPED("정지", false),
-    REJECTED("거부", false);
+public enum ProductStatus {
+    AVAILABLE("판매중"),
+    SOLD_OUT("품절"),
+    DISCONTINUED("단종");
 
     private final String statusName;
-    private final boolean loginable; // [로그인 처리] 반영
 
-    public static AdminStatus from(String status) {
+    public static ProductStatus from(String status) {
         // 입력받은 직책이 공백
         if (status == null || status.isBlank()) {
             throw new ServiceException(ErrorCode.INVALID_STATUS);
@@ -26,12 +22,15 @@ public enum AdminStatus {
         }
 
         // 직책 찾기
-        for (AdminStatus a : AdminStatus.values()) {
-            if (AdminStatus.valueOf(status) == a ) {
-                return a;
+        for (ProductStatus r : ProductStatus.values()) {
+            if (ProductStatus.valueOf(status) == r) {
+                return r;
             }
         }
 
         throw new ServiceException(ErrorCode.INVALID_STATUS);
     }
+
 }
+
+

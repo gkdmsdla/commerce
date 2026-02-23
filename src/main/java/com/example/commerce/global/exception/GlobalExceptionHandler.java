@@ -67,4 +67,23 @@ public class GlobalExceptionHandler {
                 .path(path)
                 .build();
     }
+
+    /**
+     * 4. 스프링 시큐리티 권한 부족 에러 처리 (@PreAuthorize 실패 시)
+     * 팀의 공통 ErrorResponse 포맷으로 403 Forbidden 응답을 줌.
+     */
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException e, HttpServletRequest request) {
+        log.warn("AccessDeniedException : {}", e.getMessage());
+
+        // 기존에 만들어둔 FORBIDDEN_ADMIN(E004, "권한이 없습니다.") 에러 코드를 재사용
+        ErrorCode errorCode = ErrorCode.FORBIDDEN_ADMIN;
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(buildErrorResponse(errorCode, errorCode.getMessage(), request.getRequestURI()));
+    }
+
+
 }
