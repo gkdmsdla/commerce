@@ -3,6 +3,7 @@ package com.example.commerce.product.service;
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.product.dto.*;
+import com.example.commerce.product.entity.Category;
 import com.example.commerce.product.entity.Product;
 import com.example.commerce.product.entity.ProductStatus;
 import com.example.commerce.product.repository.ProductRepository;
@@ -20,13 +21,21 @@ public class ProductService {
     // 생성
     @Transactional
     public CreateProductResponse create(CreateProductRequest request){
+        //category 유효성 확인
+        //stock,price 유효성 확인
+        //product Status 유효성 확인
+
+        ProductStatus status = ProductStatus.from(request.getProductStatus());
+        Category category = Category.from(request.getCategory());
+
         Product product = new Product(
                 request.getProductName(),
-                request.getCategory(),
+                category,
                 request.getProductPrice(),
                 request.getProductStock(),
-                request.getProductStatus()
+                status
         );
+
         Product saved = productRepository.save(product);
         return new CreateProductResponse(
                 saved.getId(),
@@ -42,8 +51,9 @@ public class ProductService {
     // 단건 조회
     @Transactional(readOnly = true)
     public GetOneProductResponse getOne (Long productId) {
-        Product product = productRepository.findById(productId).orElseThrow(()
-                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+//        Product product = productRepository.findById(productId).orElseThrow(()
+//                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = getProductById(productId);
 
         return new GetOneProductResponse(
                 product.getId(),
@@ -79,16 +89,21 @@ public class ProductService {
     // 수정
     @Transactional
     public UpdateProductResponse update(Long productId, UpdateProductRequest request){
-        Product product = productRepository.findById(productId).orElseThrow(()
-                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+//        Product product = productRepository.findById(productId).orElseThrow(()
+//                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = getProductById(productId);
+
+        ProductStatus status = ProductStatus.from(request.getProductStatus());
+        Category category = Category.from(request.getCategory());
 
         product.update(
                 request.getProductName(),
-                request.getCategory(),
+                category,
                 request.getProductPrice(),
                 request.getProductStock(),
-                request.getProductStatus()
+                status
         );
+
         return new UpdateProductResponse(
                 product.getId(),
                 product.getName(),
@@ -103,11 +118,28 @@ public class ProductService {
     // 삭제
     @Transactional
     public void delete(Long productId) {
-        Product product = productRepository.findById(productId).orElseThrow(()
-                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+//        Product product = productRepository.findById(productId).orElseThrow(()
+//                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = getProductById(productId);
+
         productRepository.delete(product);
     }
 
 
+    public void discontinue(Long productId) {
+//        Product product = productRepository.findById(productId).orElseThrow(()
+//                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = getProductById(productId);
 
+        if (product.getStatus() == ProductStatus.DISCONTINUED){
+            throw new ServiceException(ErrorCode.UNABLE_TO_WORK_STATUS);
+        }
+
+        product.updateStatus(ProductStatus.DISCONTINUED);
+    }
+
+    public Product getProductById(Long productId){
+        return productRepository.findById(productId).orElseThrow(
+                ()-> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
 }
