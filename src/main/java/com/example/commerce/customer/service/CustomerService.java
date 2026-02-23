@@ -2,6 +2,7 @@ package com.example.commerce.customer.service;
 
 import com.example.commerce.customer.dto.*;
 import com.example.commerce.customer.entity.Customer;
+import com.example.commerce.customer.entity.CustomerStatus;
 import com.example.commerce.customer.repository.CustomerRepository;
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
@@ -22,34 +23,33 @@ public class CustomerService {
     }
 
     @Transactional
-    public CreateCustomerResponse createCustomerResponse(CreateCustomerRequest request) {
+    public SingupCustomerResponse createCustomerResponse(SingupCustomerRequest request) {
 
         // 이메일 중복 체크
         if (customerRepository.existsByEmail(request.getCustomerEmail())) {
             throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }
 
-        // 엔티티 생성 (status null = 기본값 ACTIVE)
+        // customer 생성
         Customer customer = new Customer(
                 request.getCustomerName(),
                 request.getCustomerEmail(),
                 request.getCustomerPassword(),
                 request.getCustomerPhone(),
-                request.getCustomerStatus()
+                CustomerStatus.ACTIVE
         );
 
         // 저장
         Customer saved = customerRepository.save(customer);
 
         // 응답 DTO 변환
-        return new CreateCustomerResponse(
+        return new SingupCustomerResponse(
                 saved.getId(),
                 saved.getName(),
                 saved.getEmail(),
                 saved.getPhone(),
                 saved.getStatus().getStatusName(),
-                saved.getCreatedAt(),
-                saved.getModifiedAt()
+                saved.getCreatedAt()
         );
 
     }
@@ -57,7 +57,7 @@ public class CustomerService {
     // 로그인
 
     @Transactional
-    public String customerLogin(LoginCustomerRequest request, HttpSession session) {
+    public LoginCustomerResponse customerLogin(LoginCustomerRequest request, HttpSession session) {
 
         // 이메일 확인
         Customer customer = customerRepository.findByEmail(request.getCustomerEmail())
@@ -71,7 +71,12 @@ public class CustomerService {
         // 로그인 성공 > 세션에 로그인 정보 저장
         session.setAttribute("LOGIN_CUSTOMER", customer.getId());
 
-        return "로그인 성공";
+        return new LoginCustomerResponse(
+                customer.getId(),
+                customer.getName(),
+                customer.getEmail(),
+                customer.getStatus().getStatusName()
+    );
     }
 
     // 고객 상세 조회

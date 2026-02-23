@@ -22,22 +22,24 @@ public class CustomerController {
 
     // 회원가입
     @PostMapping("/signup")
-    public ResponseEntity<CommonResponseDTO<CreateCustomerResponse>> signup(
-            @Valid @RequestBody CreateCustomerRequest request
+    public ResponseEntity<CommonResponseDTO<SingupCustomerResponse>> signup(
+            @Valid @RequestBody SingupCustomerRequest request
     ) {
-        CreateCustomerResponse response = customerService.createCustomerResponse(request);
+        SingupCustomerResponse response = customerService.createCustomerResponse(request);
+
         return CommonResponseHandler.success(SuccessCode.CUSTOMER_SIGNUP, response);
     }
 
     //로그인
     @PostMapping("/login")
-    public ResponseEntity<CommonResponseDTO<String>> login(
+    public ResponseEntity<CommonResponseDTO<LoginCustomerResponse>> login(
             @Valid @RequestBody LoginCustomerRequest request,
             HttpSession session
     ) {
-        String message = customerService.customerLogin(request, session);
+        LoginCustomerResponse response = customerService.customerLogin(request, session);
         session.setMaxInactiveInterval(120);
-        return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, message);
+        return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
+
     }
 
     // 고객 상세 조회

@@ -1,12 +1,13 @@
 package com.example.commerce.customer.dto;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+
 import lombok.Getter;
 
 import java.util.List;
 
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class GetCustomersResponse {
 
     private final List<GetOneCustomerResponse> customers;

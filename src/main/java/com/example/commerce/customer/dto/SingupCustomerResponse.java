@@ -7,12 +7,12 @@ import java.time.LocalDateTime;
 
 @Getter
 @RequiredArgsConstructor
-public class GetOneCustomerResponse {
+public class SingupCustomerResponse {
+
     private final Long customerId;
     private final String customerName;
     private final String customerEmail;
     private final String customerPhone;
     private final String customerStatus;
     private final LocalDateTime customerCreatedAt;
-    private final LocalDateTime customerModifiedAt;
 }
