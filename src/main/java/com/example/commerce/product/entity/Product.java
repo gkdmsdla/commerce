@@ -1,6 +1,8 @@
 package com.example.commerce.product.entity;
 
 import com.example.commerce.global.common.BaseEntity;
+import com.example.commerce.global.exception.ErrorCode;
+import com.example.commerce.global.exception.ServiceException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,33 +41,50 @@ public class Product extends BaseEntity {
 
     // 상품 수정
     public void update (String name, Category category, int price, int stock, ProductStatus status) {
-        if (name != null) this.name = name;
-        if (category != null) this.category = category;
-        this.price = price;
-        this.stock = stock;
-        if (status != null) this.status = status;
+        this.name = name;
+        this.category = category;
+
+        if (priceIsValid(price)) this.price = price;
+        if (stockIsValid(stock)) this.stock = stock;
+
+        this.status = status;
+    }
+
+    public boolean priceIsValid(int price){
+        if (price<0) throw new ServiceException(ErrorCode.MINUS_PRICE);
+        return true;
+    }
+
+    public boolean stockIsValid(int stock){
+        if (stock<0) throw new ServiceException(ErrorCode.SHORT_STOCK);
+        return true;
+    }
+
+//    // 카테고리 변경
+//    public void updateCategory(Category category) {
+//        this.category = category;
+//    }
+
+    // 재고처리
+    public void updateStock(int orderQuantity){
+        // 여기서 들어오는 stock : 재고가 3개고 5개 주문
+        // -2 로 들어오는건가요? 3 - 5?
+        // 5 로 들어오는 느낌인가? 주문들어온 양 만큼 들어오는지
+        // quantity 로 하겠습니다
+        // request : 6개 주문 stock == 6 으로 들어오도록
+        if(stockIsValid(this.stock - orderQuantity)){
+            this.stock -= orderQuantity;
+        }
+
+        if (this.stock == 0) updateStatus(ProductStatus.SOLD_OUT);
+
+//        this.stock = stock;
+//        updateStatus();
     }
 
     // 변경-> update 함수명 변경 완
     // 상태 변경
-    public void updateStatus() {
-        if (this.stock <=0) {
-            this.stock = 0; //마이너스 방지
-            this.status = ProductStatus.SOLD_OUT;
-        } else {
-            this.status = ProductStatus.AVAILABLE;
-        }
+    public void updateStatus(ProductStatus productStatus) {
+        this.status = productStatus;
     }
-
-    // 카테고리 변경
-    public void updateCategory(Category category) {
-        this.category = category;
-    }
-
-    // 재고처리
-    public void updateStock(int stock){
-        this.stock = stock;
-        updateStatus();
-    }
-
 }

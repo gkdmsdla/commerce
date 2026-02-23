@@ -14,6 +14,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 public class ProductController {
@@ -24,11 +26,7 @@ public class ProductController {
     @PostMapping("/admins/products")
     public ResponseEntity<CommonResponseDTO<CreateProductResponse>> create(@Valid @RequestBody CreateProductRequest request) {
         // 상품은 관리자만 등록할 수 있음
-        // 세션에서 admin 정보를 가져와 확인
-//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
-//        if (sessionAdmin == null) {
-//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-//        }
+
         CreateProductResponse response = productService.create(request);
 
         return CommonResponseHandler.success(SuccessCode.CREATE_SUCCESSFUL, response);
@@ -43,7 +41,7 @@ public class ProductController {
 
     // 전체 조회
     @GetMapping("/admins")
-    public ResponseEntity<CommonResponseDTO<Page<GetAllProductResponse>>> getProductsList(
+    public ResponseEntity<CommonResponseDTO<List<GetAllProductResponse>>> getProductsList(
 
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ProductStatus status,
@@ -64,7 +62,7 @@ public class ProductController {
 
         Page<GetAllProductResponse> response = productService.getAll(keyword, status, pageable);
 
-        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response.getContent());
     }
 
     @PutMapping("/products/{productId}")
@@ -77,6 +75,12 @@ public class ProductController {
     public ResponseEntity<CommonResponseDTO<Void>> delete(@PathVariable Long productId) {
         productService.delete(productId);
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL);
+    }
+
+    @PatchMapping("/products/{productId}")
+    public ResponseEntity<CommonResponseDTO<String>> discontinueProduct(@PathVariable Long productId){
+        productService.discontinue(productId);
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, "상품이 단종 상태로 변경되었습니다.");
     }
 
 

@@ -13,7 +13,8 @@ public class UpdateProductRequest {
     private String productName;
 
     @NotBlank(message = "카테고리 설정은 필수입니다.")
-    private Category category;
+    private String category;
+    //private Category category;
 
     @NotNull(message = "가격은 필수입니다.")
     private Integer productPrice;
@@ -22,5 +23,6 @@ public class UpdateProductRequest {
     @Min(value = 0)
     private Integer productStock;
 
-    private ProductStatus productStatus;
+    //private ProductStatus productStatus;
+    private String productStatus;
 }

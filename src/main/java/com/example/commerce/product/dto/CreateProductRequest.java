@@ -14,7 +14,8 @@ public class CreateProductRequest {
     private String productName;
 
     @NotBlank(message = "카테고리 설정은 필수입니다.")
-    private Category category;
+    private String category;
+    //private Category category;
 
     @NotNull(message = "가격은 필수입니다.")
     @PositiveOrZero(message = "")
@@ -24,5 +25,6 @@ public class CreateProductRequest {
     @Min(value = 0)
     private Integer productStock;
 
-    private ProductStatus productStatus;
+    private String productStatus;
+    //private ProductStatus productStatus;
 }

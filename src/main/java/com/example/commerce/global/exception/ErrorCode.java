@@ -24,6 +24,7 @@ public enum ErrorCode {
 
     CANCEL_FORBIDDEN(HttpStatus.BAD_REQUEST, "E011", "주문 취소 불가 상태입니다."),
     SHORT_STOCK(HttpStatus.BAD_REQUEST, "E012", "재고가 부족합니다."),
+    MINUS_PRICE(HttpStatus.BAD_REQUEST, "E013", "가격은 마이너스가 될 수 없습니다."),
     DISCONTINUED(HttpStatus.BAD_REQUEST, "E013", "단종된 상품입니다."),
 
     // 계정 관련 오류 코드 추가
