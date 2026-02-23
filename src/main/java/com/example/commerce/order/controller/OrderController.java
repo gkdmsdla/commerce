@@ -12,7 +12,6 @@ import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.order.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +36,7 @@ public class OrderController {
         return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
     }
 
-    @PostMapping("admins/orders")
+    @PostMapping("/admins/orders")
     ResponseEntity<CommonResponseDTO<CreateAdminOrderResponse>> create(
             @Valid @RequestBody CreateAdminOrderRequest request, HttpSession session) {
         //관리자 주문
@@ -55,7 +54,7 @@ public class OrderController {
 
 
     // 단건 주문 조회 (관리자)
-    @GetMapping("admins/orders/{id}")
+    @GetMapping("/admins/orders/{id}")
     ResponseEntity<CommonResponseDTO<GetOneAdminOrderResponse>> getOne(
             @PathVariable("id") Long orderId,
             HttpSession session) {
@@ -71,7 +70,7 @@ public class OrderController {
     }
 
     // 단건 주문 조회 (고객)
-    @GetMapping("orders/{id}")
+    @GetMapping("/orders/{id}")
     ResponseEntity<CommonResponseDTO<GetOneOrderResponse>> getOneOrder(
             @PathVariable("id") Long orderId,
             HttpSession session) {
@@ -85,4 +84,11 @@ public class OrderController {
 
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
+
+    // 주문 취소 (관리자)
+    @PatchMapping("admins/order/{id}/cancel")
+    public
+
+
+
 }

@@ -1,35 +1,33 @@
 package com.example.commerce.order.dto;
 
 import com.example.commerce.admin.entity.Role;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Getter
-@RequiredArgsConstructor
-public class GetOneAdminOrderResponse {
-    // 단 건 주문 조회 응답
 
-    // 주문
-    private final long orderNo;
-    private final int orderQuantity;
-    private final String orderStatus;
+public record GetOneAdminOrderResponse(
+        // 단 건 주문 조회 응답
 
-    // 고객
-    private final String customerName;
-    private final String customerEmail;
+        // 주문
+        UUID orderNo,
+        int orderQuantity,
+        String orderStatus,
 
-    //상품
-    private final String productName;
-    private final int productPrice;
+        // 고객
+        String customerName,
+        String customerEmail,
 
-    private final LocalDateTime createdAt;
+        //상품
+        String productName,
+        int productPrice,
 
-    //관리자
-    private final String adminName; //주문 등록 관리자명
-    private final String adminEmail;
-    private final Role adminRole;
-}
+        LocalDateTime createdAt,
+
+        //관리자
+        String adminName,
+        String adminEmail,
+        Role adminRole
+) { }
 
 

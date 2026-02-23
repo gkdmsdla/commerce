@@ -30,11 +30,13 @@ public class OrderService {
     @Transactional
     public CreateOrderResponse create(long sessionCustomerId, @Valid CreateOrderRequest request) {
         // 세션에 저장되어있는 id 를 기반으로
-        // customer repostiory 에서 customer 를 찾음
-        Customer customer = customerRepository.findCustomerById(sessionCustomerId); //orElseThrow
+        // customer repostiory 에서 customer 를 찾음 (없으면 오류 반환)
+        Customer customer = customerRepository.findCustomerById(sessionCustomerId)
+                .orElseThrow(() -> new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
 
-        // 상품이 정말로 존재하는지
-        Product product = productRepository.findProductById(request.getProductId()); //orElseThrow
+        // 상품이 정말로 존재하는지 (없으면 오류 반환)
+        Product product = productRepository.findProductById(request.getProductId())
+                .orElseThrow(() -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // 재고가 남아있는지 확인
         if (request.getQuantity() > product.getQuantity()) {
@@ -58,7 +60,7 @@ public class OrderService {
                 newOrder.getProduct().getPrice(),
                 newOrder.getQuantity(),
                 newOrder.getTotalPrice(),
-                OrderStatus.PREPARING,
+                OrderStatus.PREPARING.getStatusName(),
                 newOrder.getCreatedAt()
         );
     }
@@ -73,10 +75,12 @@ public class OrderService {
         // 추가 필요
 
         // 요청한 고객이 존재하는지
-        Customer customer = customerRepository.findCustomerById(request.getCustomerId()); //orElseThrow
+        Customer customer = customerRepository.findCustomerById(request.getCustomerId())
+                .orElseThrow(() -> new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
 
         // 상품이 정말로 존재하는지
-        Product product = productRepository.findProductById(request.getProductId()); //orElseThrow
+        Product product = productRepository.findProductById(request.getProductId())
+                .orElseThrow(() -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // 재고가 남아있는지 확인
         if (request.getQuantity() > product.getQuantity()) {
@@ -102,7 +106,7 @@ public class OrderService {
                 newOrder.getProduct().getPrice(),
                 newOrder.getQuantity(),
                 newOrder.getTotalPrice(),
-                OrderStatus.PREPARING,
+                OrderStatus.PREPARING.getStatusName(),
                 newOrder.getCreatedAt(),
                 newOrder.getAdmin().getName(),
                 newOrder.getAdmin().getEmail(),
@@ -117,10 +121,12 @@ public class OrderService {
     // 주문 단 건 조회 (관리자용)
     public GetOneAdminOrderResponse getOneAdminOrder(Long orderId, Long sessionAdminId) {
 
+        // 관리자가 활성 상태인지 확인 (관리자 맞는지 따로 확인 안해도 되는지 체크하기)
         isActiveAdmin(getAdminById(sessionAdminId));
 
+        // 조회하고자 하는 주문이 정말로 존재하는지 (없으면 오류 반환)
         Order order = orderRepository.findById(orderId)
-                .orElseTrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
+                .orElseThrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
 
 
         //Order newOrder = orderRepository.save(order);
@@ -128,7 +134,7 @@ public class OrderService {
         return new GetOneAdminOrderResponse(
                 order.getOrderNo(),
                 order.getQuantity(),
-                OrderStatus.PREPARING,
+                OrderStatus.PREPARING.getStatusName(),
                 order.getCustomer().getName(),
                 order.getCustomer().getEmail(),
                 order.getProduct().getName(),
@@ -142,8 +148,10 @@ public class OrderService {
 
     // 주문 단 건 조회 (고객용)
     public GetOneOrderResponse getOneOrder(Long orderId, Long sessionCustomerId) {
+
+        // 조회하고자 하는 주문이 정말로 존재하는지 (없으면 오류 반환)
         Order order = orderRepository.findById(orderId)
-                .orElseTrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
+                .orElseThrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
 
         // 고객 로그인 체크
         if (sessionCustomerId == null) {
@@ -155,7 +163,7 @@ public class OrderService {
         return new GetOneOrderResponse(
                 order.getOrderNo(),
                 order.getQuantity(),
-                OrderStatus.PREPARING,
+                OrderStatus.PREPARING.getStatusName(),
                 order.getCustomer().getName(),
                 order.getCustomer().getEmail(),
                 order.getProduct().getName(),
@@ -163,16 +171,17 @@ public class OrderService {
                 order.getCreatedAt()
         );
     }
-    public Admin getAdminById(long adminId){
+
+    public Admin getAdminById(long adminId) {
         return adminRepository.findById(adminId).orElseThrow(
-                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+                () -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
         );
     }
 
     // 관리자가 활성상태가 맞는지 확인하는 로직
-    public void isActiveAdmin(Admin admin){
+    public void isActiveAdmin(Admin admin) {
         //isLoginable 은 활성(Active) 상태에서만 true 니까 활성상태가 아니라면 throw
-        if(!admin.getStatus().isLoginable()){
+        if (!admin.getStatus().isLoginable()) {
             switch (admin.getStatus()) {
                 case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
                 case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
@@ -182,5 +191,11 @@ public class OrderService {
             }
         }
     }
+
+
+    // 주문 취소 (관리자)
+    @Transactional
+    public  void cancelOrder(Long orderId, Long customerId, )
+
 
 }

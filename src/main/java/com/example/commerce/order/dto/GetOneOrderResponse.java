@@ -1,26 +1,25 @@
 package com.example.commerce.order.dto;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.constraints.UUID;
 
 import java.time.LocalDateTime;
 
-@Getter
-@RequiredArgsConstructor
-public class GetOneOrderResponse {
+
+public record GetOneOrderResponse(
 
 
-    private final long orderNo;
-    private final int orderQuantity;
-    private final String orderStatus;
+        UUID orderNo,
+        int orderQuantity,
+        String orderStatus,
 
-    // 고객
-    private final String customerName;
-    private final String customerEmail;
+        // 고객
+        String customerName,
+        String customerEmail,
 
-    //상품
-    private final String productName;
-    private final int productPrice;
+        //상품
+        String productName,
+        int productPrice,
 
-    private final LocalDateTime createdAt;
+        LocalDateTime createdAt
+) {
 }

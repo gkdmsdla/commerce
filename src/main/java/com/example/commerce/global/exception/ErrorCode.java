@@ -27,7 +27,8 @@ public enum ErrorCode {
 
     //공통에러는 C 로 시작
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "잘못된 입력값입니다,"),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다."),
+    INVALID_STATUS(HttpStatus.BAD_REQUEST, "E018", "유효하지 않은 상태입니다.");
 
     // 상태코드, 내가 지정한 오류코드, 출력할 메시지
     private final HttpStatus status;
