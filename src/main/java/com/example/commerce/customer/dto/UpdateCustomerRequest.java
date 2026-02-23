@@ -9,9 +9,9 @@ public class UpdateCustomerRequest {
 
     private String customerName;
 
-    @Email(message = "이메일 형식이 올바르지 않습니다.")
+    @Email(message = "이메일 형식과 일치해야합니다.")
     private String customerEmail;
 
-    @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 입니다.")
+    @Pattern(regexp = "^01[0-9]-\\d{3,4}-\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 입니다.")
     private String customerPhone;
 }

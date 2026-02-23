@@ -1,6 +1,10 @@
 package com.example.commerce.order.controller;
 
-
+import com.example.commerce.global.common.CommonResponseDTO;
+import com.example.commerce.global.common.CommonResponseHandler;
+import com.example.commerce.global.common.SuccessCode;
+import com.example.commerce.order.dto.*;
+import lombok.RequiredArgsConstructor;
 import com.example.commerce.admin.dto.SessionAdmin;
 import com.example.commerce.customer.dto.SessionCustomer;
 import com.example.commerce.global.exception.ErrorCode;
@@ -25,7 +29,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/orders")
-    public ResponseEntity<CreateOrderResponse> create(
+    ResponseEntity<CommonResponseDTO<CreateOrderResponse>> create(
             @Valid @RequestBody CreateOrderRequest request, HttpSession session) {
         //고객이 주문
         // 세션에서 customer 정보를 빼와야됨
@@ -36,11 +40,12 @@ public class OrderController {
 
         CreateOrderResponse response = orderService.create(sessionCustomer.getId(), request);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
     }
 
-    @PostMapping("admin/orders")
-    public ResponseEntity<CreateAdminOrderResponse> create(@Valid @RequestBody CreateAdminOrderRequest request, HttpSession session) {
+    @PostMapping("/admins/orders")
+    ResponseEntity<CommonResponseDTO<CreateAdminOrderResponse>> create(
+            @Valid @RequestBody CreateAdminOrderRequest request, HttpSession session) {
         //관리자 주문
         // 세션에서 admin 정보를 빼와야됨
 
@@ -80,6 +85,34 @@ public class OrderController {
     public ResponseEntity<Page<GetAllCustomerOrderResponse>> getAllbyCustomer() {
 
         SessionCustomer sessionCustomer = (SessionCustomer) session.getAttribute("loginAdmin");
+
+        return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
+    }
+
+
+    // 단건 주문 조회 (관리자)
+    @GetMapping("/admins/orders/{id}")
+    ResponseEntity<CommonResponseDTO<GetOneAdminOrderResponse>> getOne(
+            @PathVariable("id") Long orderId,
+            HttpSession session) {
+
+        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
+        if (sessionAdmin == null) {
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
+
+        GetOneAdminOrderResponse response = orderService.getOneAdminOrder(orderId, sessionAdmin.getId());
+
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
+    }
+
+    // 단건 주문 조회 (고객)
+    @GetMapping("/orders/{id}")
+    ResponseEntity<CommonResponseDTO<GetOneOrderResponse>> getOneOrder(
+            @PathVariable("id") Long orderId,
+            HttpSession session) {
+
+        SessionCustomer sessionCustomer = (SessionCustomer) session.getAttribute("loginCustomer");
         if (sessionCustomer == null) {
             throw new ServiceException(ErrorCode.BEFORE_LOGIN);
         }
@@ -87,4 +120,15 @@ public class OrderController {
         Page<GetAllCustomerOrderResponse> response = orderService.getAllByCustomer(sessionCustomer.getId());
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+        GetOneOrderResponse response = orderService.getOneOrder(orderId, sessionCustomer.getId());
+
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
+    }
+
+    // 주문 취소 (관리자)
+    @PatchMapping("admins/order/{id}/cancel")
+    public
+
+
+
 }

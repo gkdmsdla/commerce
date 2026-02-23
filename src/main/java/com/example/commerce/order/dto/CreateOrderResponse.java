@@ -1,21 +1,23 @@
 package com.example.commerce.order.dto;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.example.commerce.order.entity.OrderStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Getter
-@RequiredArgsConstructor
-public class CreateOrderResponse {
-    // 고객이 주문에 성공했을때 반환되는 정보
+public record CreateOrderResponse(
+        // 고객이 주문에 성공했을때 반환되는 정보
 
-    private final long orderId;
-    private final long orderNo;
-    private final String productName;
-    private final int productPrice;
-    private final int quantity;
-    private final long totalPrice;
-    private final String orderStatus;
-    private final LocalDateTime createdAt;
-}
+        long orderId,
+        UUID orderNo,
+
+        String productName,
+        int productPrice,
+
+        int quantity,
+        long totalPrice,
+
+        OrderStatus orderStatus,
+
+        LocalDateTime createdAt
+) { }
