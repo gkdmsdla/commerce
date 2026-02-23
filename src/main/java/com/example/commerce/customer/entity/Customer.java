@@ -39,7 +39,6 @@ public class Customer extends BaseEntity {
         this.email = email;
         this.password = password;
         this.phone = phone;
-        this.status = (status == null) ? CustomerStatus.ACTIVE : status;
     }
 
     // 고객 정보 변경

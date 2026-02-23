@@ -1,11 +1,6 @@
 package com.example.commerce.customer.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public class DeleteCustomerResponse {
-
-    private final String customerMessage;
-}
+public record DeleteCustomerResponse(
+        String customerMessage// 고객 삭제 시 "삭제되었습니다" 메세지 출력
+) {}

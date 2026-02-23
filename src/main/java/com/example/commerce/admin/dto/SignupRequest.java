@@ -10,20 +10,20 @@ import lombok.Getter;
 @Getter
 public class SignupRequest {
 
-    @NotBlank
+    @NotBlank(message = "이름은 필수입니다.")
     private String name;
 
-    @NotBlank
+    @NotBlank(message = "이메일은 필수입니다.")
     @Email(message = "이메일 형식과 일치해야합니다.")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "비밀번호는 필수입니다.")
     @Size(min=8, max = 20)
     private String password;
 
     @Pattern(regexp = "^01[0-9]-\\d{3,4}-\\d{4}$")
     private String phone;
 
-    //Enum 에 등록된 역할만 입력받았는지 확인
-    private Role role;
+    @NotBlank(message = "직책은 필수입니다.")
+    private String role; // 일단 String 으로 role 받고 Service 에서 확인
 }
