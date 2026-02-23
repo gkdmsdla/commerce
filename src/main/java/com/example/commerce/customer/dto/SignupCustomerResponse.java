@@ -2,12 +2,11 @@ package com.example.commerce.customer.dto;
 
 import java.time.LocalDateTime;
 
-public record CreateCustomerResponse(
+public record SignupCustomerResponse(
         Long customerId,
         String customerName,
         String customerEmail,
         String customerPhone,
-        String customerStatusName,
-        LocalDateTime customerCreatedAt,
-        LocalDateTime customerModifiedAt
+        String customerStatus,
+        LocalDateTime customerCreatedAt
 ) {}

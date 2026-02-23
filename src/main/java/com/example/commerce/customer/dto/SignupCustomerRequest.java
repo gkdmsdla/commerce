@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
 @Getter
-public class SingupCustomerRequest {
+public class SignupCustomerRequest {
 
     @NotBlank(message = "이름은 필수입니다.")
     private String customerName;

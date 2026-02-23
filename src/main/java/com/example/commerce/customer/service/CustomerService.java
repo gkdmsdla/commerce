@@ -23,7 +23,7 @@ public class CustomerService {
     }
 
     @Transactional
-    public SingupCustomerResponse createCustomerResponse(SingupCustomerRequest request) {
+    public SignupCustomerResponse createCustomerResponse(SignupCustomerRequest request) {
 
         // 이메일 중복 체크
         if (customerRepository.existsByEmail(request.getCustomerEmail())) {
@@ -43,7 +43,7 @@ public class CustomerService {
         Customer saved = customerRepository.save(customer);
 
         // 응답 DTO 변환
-        return new SingupCustomerResponse(
+        return new SignupCustomerResponse(
                 saved.getId(),
                 saved.getName(),
                 saved.getEmail(),

@@ -22,10 +22,10 @@ public class CustomerController {
 
     // 회원가입
     @PostMapping("/signup")
-    public ResponseEntity<CommonResponseDTO<SingupCustomerResponse>> signup(
-            @Valid @RequestBody SingupCustomerRequest request
+    public ResponseEntity<CommonResponseDTO<SignupCustomerResponse>> signup(
+            @Valid @RequestBody SignupCustomerRequest request
     ) {
-        SingupCustomerResponse response = customerService.createCustomerResponse(request);
+        SignupCustomerResponse response = customerService.createCustomerResponse(request);
 
         return CommonResponseHandler.success(SuccessCode.CUSTOMER_SIGNUP, response);
     }
