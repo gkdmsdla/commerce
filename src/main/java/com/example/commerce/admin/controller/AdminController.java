@@ -242,16 +242,16 @@ public class AdminController {
         adminService.updateAdminRole(id, request.getRole(), userDetails.getAdmin().getId());
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);
     }
+    @PostMapping("/reissue")
+    public ResponseEntity<CommonResponseDTO<String>> reissue(
+            // 헤더의 "Refresh-Token" 키값으로 받는다고 가정
+            //(같이 공부할 포인트) 실무 서비스에서는 프론트엔드가 Header 나 Body에 리프레시 토큰을 담아 보낸다 함.
+            @RequestHeader("Refresh-Token") String refreshToken
+    ) {
+        // 서비스 호출하여 새로운 Access Token 발급
+        String newAccessToken = adminService.reissueAccessToken(refreshToken);
 
-    // =================================================================
-    // [유틸리티] 세션 추출 공통 메서드
-    // =================================================================
-//    private SessionAdmin getSessionAdmin(HttpSession session) {
-//        // 기존 코드의 "longinAdmin" 오타를 수정하고, 반복되는 예외 처리 로직을 통합
-//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
-//        if (sessionAdmin == null) {
-//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-//        }
-//        return sessionAdmin;
-//    }
+        // 새 토큰을 응답으로 반환
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, newAccessToken);
+    }
 }

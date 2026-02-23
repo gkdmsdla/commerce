@@ -14,8 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor // JwtFilter 주입용
-
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -23,14 +22,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // 1. CSRF 비활성화 (JWT를 사용하므로 불필요함)
                 .csrf(csrf -> csrf.disable())
-                // 세션 사용 X (무상태성 확보)
+
+                // 2. 세션 관리 정책: STATELESS (서버가 세션을 생성하지도, 사용하지도 않음)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // 3. 엔드포인트 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/admins/signup", "/admins/login").permitAll()
+                        // Admin과 Customer의 회원가입/로그인 경로는 인증 없이 접근 허용
+                        .requestMatchers(
+                                "/admins/signup",
+                                "/admins/login",
+                                "/customers/signup",
+                                "/customers/login"
+                        ).permitAll()
+                        // 그 외의 모든 요청은 인증(토큰) 필요
                         .anyRequest().authenticated()
                 )
-                // ★ 기본 로그인 필터 앞에 내가 만든 JwtFilter를 끼워 넣음 ★
+
+                // 4. JWT 필터 등록: 기본 인증 필터(UsernamePasswordAuthenticationFilter)보다 먼저 실행되도록 조치
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

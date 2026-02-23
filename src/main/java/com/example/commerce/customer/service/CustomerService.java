@@ -2,76 +2,83 @@ package com.example.commerce.customer.service;
 
 import com.example.commerce.customer.dto.*;
 import com.example.commerce.customer.entity.Customer;
+import com.example.commerce.customer.entity.CustomerStatus;
 import com.example.commerce.customer.repository.CustomerRepository;
+import com.example.commerce.global.config.PasswordEncoder;
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
+import com.example.commerce.global.security.JwtUtil;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CustomerService {
 
-    // 고객 생성
     private final CustomerRepository customerRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public CustomerService(CustomerRepository customerRepository) {
-        this.customerRepository = customerRepository;
-    }
+    // [추가] JWT 발급을 위한 JwtUtil 의존성 주입
+    private final JwtUtil jwtUtil;
 
     @Transactional
-    public CreateCustomerResponse createCustomerResponse(CreateCustomerRequest request) {
-
-        // 이메일 중복 체크
+    public CreateCustomerResponse createCustomer(CreateCustomerRequest request) {
         if (customerRepository.existsByEmail(request.getCustomerEmail())) {
             throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }
 
-        // 엔티티 생성 (status null = 기본값 ACTIVE)
+        String encodedPassword = passwordEncoder.encode(request.getCustomerPassword());
+
         Customer customer = new Customer(
                 request.getCustomerName(),
                 request.getCustomerEmail(),
-                request.getCustomerPassword(),
+                encodedPassword,
                 request.getCustomerPhone(),
-                request.getCustomerStatus()
+                CustomerStatus.ACTIVE //  고객은 기본 활성 상태
         );
 
-        // 저장
-        Customer saved = customerRepository.save(customer);
+        Customer savedCustomer = customerRepository.save(customer);
 
-        // 응답 DTO 변환
         return new CreateCustomerResponse(
-                saved.getId(),
-                saved.getName(),
-                saved.getEmail(),
-                saved.getPhone(),
-                saved.getStatus().getStatusName(),
-                saved.getCreatedAt(),
-                saved.getModifiedAt()
+                savedCustomer.getId(),
+                savedCustomer.getName(),
+                savedCustomer.getEmail(),
+                savedCustomer.getPhone(),
+                savedCustomer.getStatus().getStatusName(),
+                savedCustomer.getCreatedAt(),
+                savedCustomer.getModifiedAt()
         );
-
     }
 
-    // 로그인
-
-    @Transactional
-    public String customerLogin(LoginCustomerRequest request, HttpSession session) {
-
-        // 이메일 확인
+    // 로그인(JWT 토큰 활용)
+    @Transactional(readOnly = true)
+    public LoginCustomerResponse customerLogIn(LoginCustomerRequest request) {
         Customer customer = customerRepository.findByEmail(request.getCustomerEmail())
-                .orElseThrow(() -> new ServiceException(ErrorCode.WRONG_PW));
+                .orElseThrow(() -> new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
 
-        // 비밀번호 확인
-        if (!customer.getPassword().equals(request.getCustomerPassword())) {
+        if (!passwordEncoder.matches(request.getCustomerPassword(), customer.getPassword())) {
             throw new ServiceException(ErrorCode.WRONG_PW);
         }
 
-        // 로그인 성공 > 세션에 로그인 정보 저장
-        session.setAttribute("LOGIN_CUSTOMER", customer.getId());
+        // 활성 상태 검증 (정지, 비활성 고객은 로그인 불가)
+        if (customer.getStatus() != CustomerStatus.ACTIVE) {
+            throw new ServiceException(ErrorCode.INVALID_STATUS);
+        }
 
-        return "로그인 성공";
+        // JWT 토큰 생성 (역할은 "CUSTOMER"로 명시)
+        String token = jwtUtil.createToken(customer.getId(), customer.getEmail(), "CUSTOMER");
+
+        return new LoginCustomerResponse(
+                token,
+                customer.getId(),
+                customer.getName(),
+                customer.getEmail(),
+                customer.getStatus().getStatusName()
+        );
     }
 
     // 고객 상세 조회

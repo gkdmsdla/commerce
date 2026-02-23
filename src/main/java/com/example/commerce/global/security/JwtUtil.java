@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.util.Base64; // Base64 디코딩을 위해 추가
 import java.util.Date;
 
 @Slf4j
@@ -20,6 +21,9 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expirationTime;
 
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpirationTime;
+
     private Key key;
 
     @PostConstruct
@@ -28,20 +32,31 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(bytes);
     }
 
-    // 1. 토큰 생성
+    // 1. Access Token 생성 (상세 정보 포함)
     public String createToken(Long id, String email, String role) {
         Date now = new Date();
         return Jwts.builder()
-                .setSubject(email) // 토큰 주인을 이메일로 설정
-                .claim("id", id)   // 커스텀 데이터 (ID)
-                .claim("role", role) // 커스텀 데이터 (권한)
+                .setSubject(email)
+                .claim("id", id)
+                .claim("role", role)
                 .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + expirationTime))
+                .setExpiration(new Date(now.getTime() + expirationTime)) // 1시간 설정 주입
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 2. 토큰 유효성 검증
+    // 2. Refresh Token 생성 (최소 정보만 포함)
+    public String createRefreshToken(String email) {
+        Date now = new Date();
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + refreshExpirationTime)) // 14일 설정 주입
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // 3. 토큰 유효성 검증
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
@@ -58,7 +73,7 @@ public class JwtUtil {
         return false;
     }
 
-    // 3. 토큰에서 정보 추출
+    // 4. 토큰에서 정보 추출
     public Claims getUserInfoFromToken(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
     }

@@ -9,6 +9,8 @@ import com.example.commerce.global.config.PasswordEncoder;
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.global.security.JwtUtil;
+import com.example.commerce.global.security.entity.RefreshToken;
+import com.example.commerce.global.security.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminService {
 
     private final AdminRepository adminRepository;
+    private final JwtUtil jwtUtil; // jwt 토큰 사용을 위해 작성
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository; // 리프레시 토큰 사용 위해 활용
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -58,9 +62,9 @@ public class AdminService {
         );
     }
 
-    private final JwtUtil jwtUtil; // 상단에 DI(의존성 주입) 추가해주세요!
 
-    @Transactional(readOnly = true)
+
+    @Transactional
     public LoginResponse login(LoginRequest request) { // HttpServletRequest 파라미터 삭제
         Admin admin = adminRepository.findByEmail(request.getEmail()).orElseThrow(
                 ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
@@ -72,14 +76,20 @@ public class AdminService {
 
         isActiveAdmin(admin);
 
-        // 과거의 세션 생성 코드(SecurityContextHolder.setContext... session.setAttribute...) 전부 삭제! ★
+        // 1. Access Token 및 Refresh Token 동시 생성
+        String accessToken = jwtUtil.createToken(admin.getId(), admin.getEmail(), admin.getRole().name());
+        String refreshToken = jwtUtil.createRefreshToken(admin.getEmail());
 
-        // 1. JWT 토큰 생성
-        String token = jwtUtil.createToken(admin.getId(), admin.getEmail(), admin.getRole().name());
+        // 2. Refresh Token DB 저장 (이미 존재하면 Update, 없으면 Insert)
+        RefreshToken tokenEntity = refreshTokenRepository.findByEmail(admin.getEmail())
+                .orElse(new RefreshToken(admin.getEmail(), refreshToken));
 
-        // 2. Response 에 토큰 담아서 반환
+        tokenEntity.updateToken(refreshToken);
+        refreshTokenRepository.save(tokenEntity);
+
+        // 3. LoginResponse 반환 (accessToken을 프론트엔드로 전달)
         return new LoginResponse(
-                token, // 생성된 토큰
+                accessToken, // 기존 token 자리에 accessToken 넣기
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
@@ -246,4 +256,28 @@ Admin admin = adminRepository.findById(adminId)
         // Soft Delete 로직
         admin.updateStatus(AdminStatus.INACTIVE);
     }
+
+    // 토큰 재발급 로직
+    @Transactional
+    public String reissueAccessToken(String refreshToken) {
+        // 1. 리프레시 토큰 자체의 서명 및 만료일 검증
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new ServiceException(ErrorCode.INVALID_INPUT_VALUE); // "유효하지 않은 토큰입니다."
+        }
+
+        // 2. DB에 해당 토큰이 실제로 존재하는지 확인
+        RefreshToken savedToken = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new ServiceException(ErrorCode.INVALID_INPUT_VALUE));
+
+        String email = savedToken.getEmail();
+
+        // 3. 이메일로 관리자 정보 조회하여 새로운 Access Token 발급
+        Admin admin = adminRepository.findByEmail(email)
+                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+
+        isActiveAdmin(admin); // 정지되거나 탈퇴한 유저인지 상태 재검증
+
+        return jwtUtil.createToken(admin.getId(), admin.getEmail(), admin.getRole().name());
+    }
+
 }
