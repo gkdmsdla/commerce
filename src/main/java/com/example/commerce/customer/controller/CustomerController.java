@@ -1,6 +1,5 @@
 package com.example.commerce.customer.controller;
 
-
 import com.example.commerce.customer.dto.*;
 import com.example.commerce.customer.entity.CustomerStatus;
 import com.example.commerce.customer.service.CustomerService;
@@ -33,7 +32,7 @@ public class CustomerController {
     public ResponseEntity<CommonResponseDTO<SignupCustomerResponse>> signup(
             @Valid @RequestBody SignupCustomerRequest request
     ) {
-        SignupCustomerResponse response = customerService.createCustomerResponse(request);
+        SignupCustomerResponse response = customerService.customerSignUp(request);
 
         return CommonResponseHandler.success(SuccessCode.CUSTOMER_SIGNUP, response);
     }
@@ -43,7 +42,7 @@ public class CustomerController {
     public ResponseEntity<CommonResponseDTO<LoginCustomerResponse>> login(
             @Valid @RequestBody LoginCustomerRequest request,
             HttpSession httpSession) {
-        LoginCustomerResponse response = customerService.customerLogin(request, httpSession);
+        LoginCustomerResponse response = customerService.customerLogIn(request, httpSession);
         //session.setMaxInactiveInterval(120);
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
 
@@ -85,8 +84,6 @@ public class CustomerController {
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
         Page<GetOneCustomerResponse> response = customerService.findAllCustomer(userDetails.getAdmin().getId(), keyword, status, pageable);
 
-        //List<GetOneCustomerResponse> responses = customerService.findAllCustomer();
-
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response.getContent());
     }
 
@@ -115,11 +112,11 @@ public class CustomerController {
     // 고객 상태 수정
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<CommonResponseDTO<UpdateCustomerStstusResponse>> updateCustomerStatus(
+    public ResponseEntity<CommonResponseDTO<UpdateCustomerStatusResponse>> updateCustomerStatus(
             @PathVariable Long id,
             @RequestBody UpdateCustomerStatusRequest requset
     ){
-        UpdateCustomerStstusResponse response = customerService.updateCustomerStatus(id, requset);
+        UpdateCustomerStatusResponse response = customerService.updateCustomerStatus(id, requset);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 }
