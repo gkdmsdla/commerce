@@ -1,6 +1,5 @@
 package com.example.commerce.customer.controller;
 
-
 import com.example.commerce.customer.dto.*;
 import com.example.commerce.customer.entity.CustomerStatus;
 import com.example.commerce.customer.service.CustomerService;
@@ -8,7 +7,7 @@ import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
 import com.example.commerce.global.security.AdminUserDetails;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -42,9 +41,8 @@ public class CustomerController {
     @PostMapping("/login")
     public ResponseEntity<CommonResponseDTO<LoginCustomerResponse>> login(
             @Valid @RequestBody LoginCustomerRequest request,
-            HttpServletRequest httpRequest
-    ) {
-        LoginCustomerResponse response = customerService.customerLogin(request, httpRequest);
+            HttpSession httpSession) {
+        LoginCustomerResponse response = customerService.customerLogin(request, httpSession);
         //session.setMaxInactiveInterval(120);
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
 
@@ -86,8 +84,6 @@ public class CustomerController {
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
         Page<GetOneCustomerResponse> response = customerService.findAllCustomer(userDetails.getAdmin().getId(), keyword, status, pageable);
 
-        //List<GetOneCustomerResponse> responses = customerService.findAllCustomer();
-
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response.getContent());
     }
 
@@ -111,5 +107,16 @@ public class CustomerController {
     ) {
         customerService.deleteCustomer(id);
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL, null);
+    }
+
+    // 고객 상태 수정
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<CommonResponseDTO<UpdateCustomerStstusResponse>> updateCustomerStatus(
+            @PathVariable Long id,
+            @RequestBody UpdateCustomerStatusRequest requset
+    ){
+        UpdateCustomerStstusResponse response = customerService.updateCustomerStatus(id, requset);
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 }

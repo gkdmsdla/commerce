@@ -172,6 +172,19 @@ public class CustomerService {
         );
     }
 
+    // 유저 상태 수정
+    @Transactional
+    public UpdateCustomerStstusResponse updateCustomerStatus(Long id, UpdateCustomerStatusRequest request){
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
+
+        return new UpdateCustomerStstusResponse(
+                customer.getId(),
+                customer.getStatus().getStatusName(),
+                customer.getModifiedAt()
+        );
+    }
+
     // 유저 삭제
     @Transactional
     public void deleteCustomer(Long id){
