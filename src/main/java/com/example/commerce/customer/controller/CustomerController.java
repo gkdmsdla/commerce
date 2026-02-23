@@ -26,6 +26,7 @@ public class CustomerController {
             @Valid @RequestBody SingupCustomerRequest request
     ) {
         SingupCustomerResponse response = customerService.createCustomerResponse(request);
+
         return CommonResponseHandler.success(SuccessCode.CUSTOMER_SIGNUP, response);
     }
 
@@ -38,6 +39,7 @@ public class CustomerController {
         LoginCustomerResponse response = customerService.customerLogin(request, session);
         session.setMaxInactiveInterval(120);
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
+
     }
 
     // 고객 상세 조회
