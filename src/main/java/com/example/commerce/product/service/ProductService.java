@@ -41,8 +41,8 @@ public class ProductService {
 
     // 단건 조회
     @Transactional(readOnly = true)
-    public GetOneProductResponse getOne (Long id) {
-        Product product = productRepository.findById(id).orElseThrow(()
+    public GetOneProductResponse getOne (Long productId) {
+        Product product = productRepository.findById(productId).orElseThrow(()
                 -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
 
         return new GetOneProductResponse(
@@ -78,8 +78,8 @@ public class ProductService {
 
     // 수정
     @Transactional
-    public UpdateProductResponse update(Long id, UpdateProductRequest request){
-        Product product = productRepository.findById(id).orElseThrow(()
+    public UpdateProductResponse update(Long productId, UpdateProductRequest request){
+        Product product = productRepository.findById(productId).orElseThrow(()
                 -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
 
         product.update(
@@ -102,8 +102,8 @@ public class ProductService {
 
     // 삭제
     @Transactional
-    public void delete(Long id) {
-        Product product = productRepository.findById(id).orElseThrow(()
+    public void delete(Long productId) {
+        Product product = productRepository.findById(productId).orElseThrow(()
                 -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
         productRepository.delete(product);
     }

@@ -21,7 +21,7 @@ public class ProductController {
     private final ProductService productService;
 
     // 생성
-    @PostMapping("admins/products")
+    @PostMapping("/admins/products")
     public ResponseEntity<CommonResponseDTO<CreateProductResponse>> create(@Valid @RequestBody CreateProductRequest request) {
         // 상품은 관리자만 등록할 수 있음
         // 세션에서 admin 정보를 가져와 확인
@@ -35,9 +35,9 @@ public class ProductController {
     }
 
     // 단건 조회
-    @GetMapping("products/{id}")
-    public ResponseEntity<CommonResponseDTO<GetOneProductResponse>> getOne(@PathVariable Long id) {
-        GetOneProductResponse response = productService.getOne(id);
+    @GetMapping("/products/{productId}")
+    public ResponseEntity<CommonResponseDTO<GetOneProductResponse>> getOne(@PathVariable Long productId) {
+        GetOneProductResponse response = productService.getOne(productId);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
@@ -67,15 +67,15 @@ public class ProductController {
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
-    @PutMapping("products/{id}")
-    public ResponseEntity<CommonResponseDTO<UpdateProductResponse>> update(@Valid Long id, @RequestBody UpdateProductRequest request) {
-        UpdateProductResponse response = productService.update(id, request);
+    @PutMapping("/products/{productId}")
+    public ResponseEntity<CommonResponseDTO<UpdateProductResponse>> update(@PathVariable Long productId,@Valid @RequestBody UpdateProductRequest request) {
+        UpdateProductResponse response = productService.update(productId, request);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 
-    @DeleteMapping("products/{id}")
-    public ResponseEntity<CommonResponseDTO<Void>> delete(@PathVariable Long id) {
-        productService.delete(id);
+    @DeleteMapping("/products/{productId}")
+    public ResponseEntity<CommonResponseDTO<Void>> delete(@PathVariable Long productId) {
+        productService.delete(productId);
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL);
     }
 
