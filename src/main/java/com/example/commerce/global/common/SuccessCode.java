@@ -14,7 +14,7 @@ public enum SuccessCode {
     ADMIN_SIGNUP(HttpStatus.CREATED, "관리자 신청이 완료되었습니다."),
     STATUS_PATCHED(HttpStatus.OK, "상태가 업데이트 되었습니다."),
     ORDER_SUCCESSFUL(HttpStatus.CREATED, "주문이 완료되었습니다."),
-    DELETE_SUCCESSFUL(HttpStatus.NO_CONTENT, "삭제가 정상적으로 완료되었습니다."),
+    DELETE_SUCCESSFUL(HttpStatus.OK, "삭제가 정상적으로 완료되었습니다."),
     GET_SUCCESSFUL(HttpStatus.OK, "조회가 완료되었습니다."),
     DATA_UPDATED(HttpStatus.OK, "정보가 업데이트 되었습니다.")
     ;
