@@ -5,10 +5,10 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
-public class UpdateOrderRequest {
+public class UpdateAdminOrderRequest {
 
     private Long orderNo;
-    private Enum orderStatus;
+    private String statusName;
     private Long customersId;
     private Long AdminId;
     private String ProductId;

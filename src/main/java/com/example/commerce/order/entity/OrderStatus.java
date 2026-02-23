@@ -9,10 +9,10 @@ public enum OrderStatus {
     DELIVERED("배송 완료"),
     CANCELED("취소됨");
 
-    private final String description;
+    private final String statusName;
 
-    OrderStatus(String description){
-        this.description = description;
+    OrderStatus(String statusName){
+        this.statusName = statusName;
     }
 
 }

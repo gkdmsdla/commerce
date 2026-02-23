@@ -1,16 +1,12 @@
 package com.example.commerce.order.dto;
 
-import com.example.commerce.order.entity.OrderStatus;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Getter
-@RequiredArgsConstructor
-public class GetAllCustomerOrderResponse {
-    private final long orderNo;
-    private final String customerName;
-    private final String productName;
-    private final OrderStatus orderStatus;
+public record GetAllCustomerOrderResponse(
+        UUID orderNo,
+        String customerName,
+        String productName,
+        String orderStatus
+) {
 }

@@ -1,6 +1,5 @@
 package com.example.commerce.order.dto;
 
-import com.example.commerce.order.entity.OrderStatus;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +16,6 @@ public class CreateOrderResponse {
     private final int productPrice;
     private final int quantity;
     private final long totalPrice;
-    private final OrderStatus orderStatus;
+    private final String orderStatus;
     private final LocalDateTime createdAt;
 }

@@ -6,7 +6,6 @@ import com.example.commerce.admin.repository.AdminRepository;
 import com.example.commerce.customer.entity.Customer;
 import com.example.commerce.customer.repository.CustomerRepository;
 import com.example.commerce.global.exception.ErrorCode;
-import com.example.commerce.global.exception.GlobalExceptionHandler;
 import com.example.commerce.order.dto.*;
 import com.example.commerce.order.entity.Order;
 import com.example.commerce.order.entity.OrderStatus;
@@ -15,16 +14,18 @@ import com.example.commerce.product.entity.Product;
 import com.example.commerce.global.exception.ServiceException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderService {
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
@@ -120,10 +121,10 @@ public class OrderService {
     }
 
 
-    @Transactional(readOnly = true)
-    public List<GetAllAdminOrderResponse> getAllByAdmin(){
-        List<Order> orders = orderRepository.findAll();
+    public Page<GetAllAdminOrderResponse> getAllByAdmin(Pageable pageable ){
+        Page<Order> orders = orderRepository.findOrders(pageable);
         List<GetAllAdminOrderResponse> dtos = new ArrayList<>();
+        // -1 을 조회할 수 없게 예외 처리
 
         for (Order order : orders) {
             GetAllAdminOrderResponse dto = new GetAllAdminOrderResponse(
@@ -132,31 +133,59 @@ public class OrderService {
                     order.getCustomer().getName(),
                     order.getProduct().getName(),
                     order.getTotalPrice(),
-                    order.getStatus(),
+                    order.getStatusName(),
+                    order.getQuantity(),
                     order.getCreatedAt(),
-                    order.getAdmin().getName(),
-                    order.getAdmin().getRole()
+                    order.getAdmin().getName()
             );
             dtos.add(dto);
         }
-        return dtos;
+        return new PageImpl<>(dtos, pageable, orders.getTotalElements());
     }
 
 
-    @Transactional(readOnly = true)
-    public List<GetAllCustomerOrderResponse> getAllByCustomer(){
-        List<Order> orders = orderRepository.findAll();
-        List<GetAllCustomerOrderResponse> dtos = new ArrayList<>();
+    public Page<GetAllCustomerOrderResponse> getAllByCustomer(Pageable pageable){
+        Page<Order> orders = orderRepository.findOrders(pageable);
 
-        for (Order order : orders) {
-            GetAllCustomerOrderResponse dto = new GetAllAdminOrderResponse(
-                    order.getOrderNo(),
-                    order.getCustomer().getName(),
-                    order.getProduct().getName(),
-                    order.getStatus()
-            );
-            dtos.add(dto);
-        }
-        return dtos;
+        return orders.map(order -> new GetAllCustomerOrderResponse(
+                order.getOrderNo(),
+                order.getCustomer().getName(),
+                order.getProduct().getName(),
+                order.getStatusName()
+        ));
     }
+
+
+    // 수정을 수정 중입니다:p
+    public UpdateAdminOrderResponse UAOR(UpdateAdminOrderRequest request){
+        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
+                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+
+        Customer customer = customerRepository.findCustomerById(request.getCustomerId()); //orElseThrow
+
+        Product product = productRepository.findProductById(request.getProductId());
+
+        Order order = new Order(
+                request.getQuantity(),
+                calculateTotalPrice(request.getQuantity(), product.getPrice()),
+                product,
+                customer,
+                null
+        );
+
+        Order newOrder = orderRepository.save(order);
+
+        return new CreateOrderResponse(
+                newOrder.getId(),
+                newOrder.getOrderNo(),
+                newOrder.getProduct().getName(),
+                newOrder.getProduct().getPrice(),
+                newOrder.getQuantity(),
+                newOrder.getTotalPrice(),
+                OrderStatus.PREPARING,
+                newOrder.getCreatedAt()
+        );
+    }
+
 }

@@ -5,6 +5,8 @@ import com.example.commerce.customer.entity.Customer;
 import com.example.commerce.global.common.BaseEntity;
 import com.example.commerce.product.entity.Product;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,7 +30,7 @@ public class Order extends BaseEntity {
     //    주문 상태 (이넘사용)
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    private OrderStatus statusName;
 
 
     //    주문 수량 -> ordercount

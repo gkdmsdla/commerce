@@ -1,7 +1,6 @@
 package com.example.commerce.order.dto;
 
 import com.example.commerce.admin.entity.Role;
-import com.example.commerce.order.entity.OrderStatus;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -21,7 +20,7 @@ public class CreateAdminOrderResponse {
     private final int productPrice;
     private final int quantity;
     private final long totalPrice;
-    private final OrderStatus orderStatus;
+    private final String orderStatus;
     private final LocalDateTime createdAt;
 
     private final String adminName; //주문 등록 관리자명
