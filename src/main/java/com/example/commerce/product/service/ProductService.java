@@ -1,13 +1,16 @@
 package com.example.commerce.product.service;
 
+import com.example.commerce.global.exception.ErrorCode;
+import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.product.dto.*;
 import com.example.commerce.product.entity.Product;
+import com.example.commerce.product.entity.ProductStatus;
 import com.example.commerce.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +22,7 @@ public class ProductService {
     public CreateProductResponse create(CreateProductRequest request){
         Product product = new Product(
                 request.getProductName(),
-                request.getProductCategory(),
+                request.getCategory(),
                 request.getProductPrice(),
                 request.getProductStock(),
                 request.getProductStatus()
@@ -28,10 +31,10 @@ public class ProductService {
         return new CreateProductResponse(
                 saved.getId(),
                 saved.getName(),
-                saved.getCategory(),
+                saved.getCategory().getCategoryName(),
                 saved.getPrice(),
                 saved.getStock(),
-                saved.getStatus(),
+                saved.getStatus().getStatusName(),
                 saved.getCreatedAt()
         );
     }
@@ -39,47 +42,49 @@ public class ProductService {
     // 단건 조회
     @Transactional(readOnly = true)
     public GetOneProductResponse getOne (Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재 하지 않는 상품입니다."));
+        Product product = productRepository.findById(id).orElseThrow(()
+                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
 
         return new GetOneProductResponse(
                 product.getId(),
                 product.getName(),
-                product.getCategory(),
+                product.getCategory().getCategoryName(),
                 product.getPrice(),
                 product.getStock(),
-                product.getStatus(),
+                product.getStatus().getStatusName(),
                 product.getCreatedAt());
     }
 
     // 전체 조회
     @Transactional(readOnly = true)
-    public List<GetOneProductResponse> getAll(String name) {
-        List<Product> products = (name != null)
-                ? productRepository.findAllByProductnameOrderByCreatedAtDesc(name)
-                : productRepository.findAllByOrderByCreatedAtDesc();
+    public Page<GetAllProductResponse> getAll(String keyword, ProductStatus status, PageRequest pageable) {
+        //admin id 로 admin 을 찾고, 활성상태인지 확인
+        //isActiveAdmin(getAdminById(sessionAdminId));
+        Page<Product> products = productRepository.searchProducts(keyword, status, pageable);
 
-        return products.stream()
-                .map(product -> new GetOneProductResponse(
+//        List<Product> products = (keyword != null)
+//                ? productRepository.findAllByProductnameOrderByCreatedAtDesc(keyword)
+//                : productRepository.findAllByOrderByCreatedAtDesc();
+
+        return products.map(product -> new GetAllProductResponse(
                         product.getId(),
                         product.getName(),
-                        product.getCategory(),
+                        product.getCategory().getCategoryName(),
                         product.getPrice(),
                         product.getStock(),
-                        product.getStatus(),
-                        product.getCreatedAt())
-                ).toList();
+                        product.getStatus().getStatusName(),
+                        product.getCreatedAt()));
     }
 
     // 수정
     @Transactional
     public UpdateProductResponse update(Long id, UpdateProductRequest request){
         Product product = productRepository.findById(id).orElseThrow(()
-                -> new IllegalArgumentException("존재 하지 않는 상품입니다."));
+                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
 
         product.update(
                 request.getProductName(),
-                request.getProductCategory(),
+                request.getCategory(),
                 request.getProductPrice(),
                 request.getProductStock(),
                 request.getProductStatus()
@@ -87,10 +92,10 @@ public class ProductService {
         return new UpdateProductResponse(
                 product.getId(),
                 product.getName(),
-                product.getCategory(),
+                product.getCategory().getCategoryName(),
                 product.getPrice(),
                 product.getStock(),
-                product.getStatus(),
+                product.getStatus().getStatusName(),
                 product.getCreatedAt(),
                 product.getModifiedAt());
     }
@@ -99,7 +104,7 @@ public class ProductService {
     @Transactional
     public void delete(Long id) {
         Product product = productRepository.findById(id).orElseThrow(()
-                -> new IllegalArgumentException("존재 하지 않는 상품입니다."));
+                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
         productRepository.delete(product);
     }
 

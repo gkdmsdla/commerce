@@ -1,14 +1,18 @@
 package com.example.commerce.product.controller;
 
+import com.example.commerce.global.common.CommonResponseDTO;
+import com.example.commerce.global.common.CommonResponseHandler;
+import com.example.commerce.global.common.SuccessCode;
 import com.example.commerce.product.dto.*;
+import com.example.commerce.product.entity.ProductStatus;
 import com.example.commerce.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,34 +21,63 @@ public class ProductController {
     private final ProductService productService;
 
     // 생성
-    @PostMapping
-    public ResponseEntity<CreateProductResponse> create(@RequestBody CreateProductRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
+    @PostMapping("admins/products")
+    public ResponseEntity<CommonResponseDTO<CreateProductResponse>> create(@Valid @RequestBody CreateProductRequest request) {
+        // 상품은 관리자만 등록할 수 있음
+        // 세션에서 admin 정보를 가져와 확인
+//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
+//        if (sessionAdmin == null) {
+//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+//        }
+        CreateProductResponse response = productService.create(request);
+
+        return CommonResponseHandler.success(SuccessCode.CREATE_SUCCESSFUL, response);
     }
 
     // 단건 조회
-    @GetMapping("/{id}")
-    public ResponseEntity<GetOneProductResponse> getOne(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getOne(id));
+    @GetMapping("products/{id}")
+    public ResponseEntity<CommonResponseDTO<GetOneProductResponse>> getOne(@PathVariable Long id) {
+        GetOneProductResponse response = productService.getOne(id);
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
     // 전체 조회
-    @GetMapping
-    ResponseEntity<List<GetOneProductResponse>> getAll(@RequestParam(required = false) String name) {
-        return ResponseEntity.ok(productService.getAll(name));
+    @GetMapping("/admins")
+    public ResponseEntity<CommonResponseDTO<Page<GetAllProductResponse>>> getProductsList(
+
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ProductStatus status,
+
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) boolean desc
+
+            ) {
+        Sort.Direction direction = (desc) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        String sortValue = "email";
+        if ("price".equals(sort)) sortValue = "price";
+        else if ("createdAt".equals(sort)) sortValue = "createdAt";
+
+        PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
+
+        Page<GetAllProductResponse> response = productService.getAll(keyword, status, pageable);
+
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<UpdateProductResponse> update(@Valid Long id, @RequestBody UpdateProductRequest request) {
-        return ResponseEntity.ok(productService.update(id, request));
+    @PutMapping("products/{id}")
+    public ResponseEntity<CommonResponseDTO<UpdateProductResponse>> update(@Valid Long id, @RequestBody UpdateProductRequest request) {
+        UpdateProductResponse response = productService.update(id, request);
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    @DeleteMapping("products/{id}")
+    public ResponseEntity<CommonResponseDTO<Void>> delete(@PathVariable Long id) {
         productService.delete(id);
-        return ResponseEntity.noContent().build();
+        return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL);
     }
-
 
 
 }

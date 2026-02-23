@@ -20,14 +20,18 @@ public enum ErrorCode {
     CUSTOMER_NOT_FOUND(HttpStatus.NOT_FOUND, "E007", "존재하지 않는 고객입니다."),
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "E008", "존재하지 않는 상품입니다."),
     ORDERING_NOT_FOUND(HttpStatus.NOT_FOUND, "E009", "존재하지 않는 주문입니다."),
+    //CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "E010", "존재하지 않는 카테고리입니다."),
 
-    CANCEL_FORBIDDEN(HttpStatus.BAD_REQUEST, "E010", "주문 취소 불가 상태입니다."),
-    SHORT_STOCK(HttpStatus.BAD_REQUEST, "E011", "재고가 부족합니다."),
-    DISCONTINUED(HttpStatus.BAD_REQUEST, "E012", "단종된 상품입니다."),
+    CANCEL_FORBIDDEN(HttpStatus.BAD_REQUEST, "E011", "주문 취소 불가 상태입니다."),
+    SHORT_STOCK(HttpStatus.BAD_REQUEST, "E012", "재고가 부족합니다."),
+    DISCONTINUED(HttpStatus.BAD_REQUEST, "E013", "단종된 상품입니다."),
 
     //공통에러는 C 로 시작
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "잘못된 입력값입니다,"),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
+    INVALID_STATUS(HttpStatus.BAD_REQUEST, "C002", "유효하지 않은 상태입니다."),
+    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "C003", "유효하지 않은 카테고리입니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C004", "서버 내부 오류가 발생했습니다.");
+
 
     // 상태코드, 내가 지정한 오류코드, 출력할 메시지
     private final HttpStatus status;

@@ -1,16 +1,13 @@
 package com.example.commerce.product.dto;
 
-import com.example.commerce.product.entity.ProductCategory;
-import com.example.commerce.product.entity.ProductStatus;
-
 import java.time.LocalDateTime;
 
 public record GetOneProductResponse(
         Long productId,
         String productName,
-        ProductCategory productCategory,
+        String categoryName,
         int productPrice,
         int productStock,
-        ProductStatus productstatus,
+        String statusName,
         LocalDateTime createdAt
 ) {}
