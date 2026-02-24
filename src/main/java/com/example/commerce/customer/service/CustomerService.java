@@ -8,7 +8,8 @@ import com.example.commerce.global.config.PasswordEncoder;
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.global.security.JwtUtil;
-import jakarta.servlet.http.HttpSession;
+import com.example.commerce.global.security.entity.RefreshToken;
+import com.example.commerce.global.security.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
 
     // [추가] JWT 발급을 위한 JwtUtil 의존성 주입
@@ -70,10 +72,19 @@ public class CustomerService {
         }
 
         // JWT 토큰 생성 (역할은 "CUSTOMER"로 명시)
-        String token = jwtUtil.createToken(customer.getId(), customer.getEmail(), "CUSTOMER");
+        //String token = jwtUtil.createToken(customer.getId(), customer.getEmail(), "CUSTOMER");
+        String accessToken = jwtUtil.createToken(customer.getId(), customer.getEmail(), customer.getRole().name());
+        String refreshToken = jwtUtil.createRefreshToken(customer.getEmail());
+
+        // 2. Refresh Token DB 저장 (이미 존재하면 Update, 없으면 Insert)
+        RefreshToken tokenEntity = refreshTokenRepository.findByEmail(customer.getEmail())
+                .orElse(new RefreshToken(customer.getEmail(), refreshToken));
+
+        tokenEntity.updateToken(refreshToken);
+        refreshTokenRepository.save(tokenEntity);
 
         return new LoginCustomerResponse(
-                token,
+                accessToken,
                 customer.getId(),
                 customer.getName(),
                 customer.getEmail(),

@@ -93,8 +93,13 @@ public class Order extends BaseEntity {
         }
 
         // 취소로 상태 변경
-        this.orderStatus = OrderStatus.CANCELED;
+        //this.orderStatus = OrderStatus.CANCELED;
+        updateStatus(OrderStatus.CANCELED);
         // 취소 사유 저장
         this.cancelReason = reason;
+    }
+
+    public void updateStatus(OrderStatus orderStatus){
+        this.orderStatus = orderStatus;
     }
 }

@@ -227,7 +227,8 @@ public class AdminController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<CommonResponseDTO<Void>> updateAdminStatus(
-            @PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request, @AuthenticationPrincipal AdminUserDetails userDetails) {
+            @PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request,
+            @AuthenticationPrincipal AdminUserDetails userDetails) {
         //SessionAdmin sessionAdmin = getSessionAdmin(session);
         adminService.updateAdminStatus(id, request.getStatus(), userDetails.getAdmin().getId());
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);

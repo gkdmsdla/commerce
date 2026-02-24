@@ -44,8 +44,12 @@ public class OrderService {
                 .orElseThrow(() -> new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
 
         // 상품이 정말로 존재하는지 (없으면 오류 반환)
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = getProductById(request.getProductId());
+
+//        Product product = productRepository.findById(request.getProductId())
+//                .orElseThrow(() -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        productStatusIsValid(product.getId());
 
         // 재고가 남아있는지 확인
         if (request.getQuantity() > product.getStock()) {
@@ -89,8 +93,11 @@ public class OrderService {
                 .orElseThrow(() -> new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
 
         // 상품이 정말로 존재하는지
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+        Product product = getProductById(request.getProductId());
+//        Product product = productRepository.findById(request.getProductId())
+//                .orElseThrow(() -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        productStatusIsValid(product.getId());
 
         // 재고가 남아있는지 확인
         if (request.getQuantity() > product.getStock()) {
@@ -169,42 +176,6 @@ public class OrderService {
         ));
     }
 
-
-    // 수정을 수정 중입니다:p
-//    public UpdateAdminOrderResponse UAOR(UpdateAdminOrderRequest request){
-//        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
-//                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-//        );
-//
-//        Customer customer = customerRepository.findCustomerById(request.getCustomerId()); //orElseThrow
-//
-//        Product product = productRepository.findProductById(request.getProductId());
-//
-//        Order order = new Order(
-//                request.getQuantity(),
-//                calculateTotalPrice(request.getQuantity(), product.getPrice()),
-//                product,
-//                customer,
-//                null
-//        );
-//
-//        Order newOrder = orderRepository.save(order);
-//
-//        return new CreateOrderResponse(
-//                newOrder.getId(),
-//                newOrder.getOrderNo(),
-//                newOrder.getProduct().getName(),
-//                newOrder.getProduct().getPrice(),
-//                newOrder.getQuantity(),
-//                newOrder.getTotalPrice(),
-//                OrderStatus.PREPARING,
-//                newOrder.getCreatedAt()
-//        );
-//    }
-//
-//
-//        return (long) quantity * price;
-//    }
 
     // 주문 단 건 조회 (관리자용)
     public GetOneAdminOrderResponse getOneAdminOrder(Long orderId, Long sessionAdminId) {
@@ -289,8 +260,7 @@ public class OrderService {
         isActiveAdmin(getAdminById(sessionAdminId));
 
         // 주문 확인
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
+        Order order = getOrderById(orderId);
 
         // 재고 다시 수량 올리기
         Product product = order.getProduct();
@@ -305,6 +275,31 @@ public class OrderService {
                 order.getOrderStatus().getStatusName(),
                 order.getCancelReason()
         );
+    }
 
+    @Transactional(readOnly = true)
+    public void deliverCompleted(Long orderId, Long sessionAdminId){
+        isActiveAdmin(getAdminById(sessionAdminId));
+
+        Order order = getOrderById(orderId);
+
+        order.updateStatus(OrderStatus.DELIVERED);
+    }
+
+    public Product getProductById(Long productId){
+        return  productRepository.findById(productId)
+                .orElseThrow(() -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    public Order getOrderById(Long orderId){
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new ServiceException(ErrorCode.ORDERING_NOT_FOUND));
+    }
+
+    public void productStatusIsValid(Long productId){
+        Product product = getProductById(productId);
+        if (product.getStatus()!=ProductStatus.AVAILABLE){
+            throw new ServiceException(ErrorCode.INVALID_STATUS);
+        }
     }
 }

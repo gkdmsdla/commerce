@@ -165,5 +165,16 @@ public class OrderController {
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL, response);
     }
 
+    @PatchMapping("/admins/orders/{orderId}/delivered")
+    ResponseEntity<CommonResponseDTO<String>> deliverCompleted(
+            @PathVariable Long orderId, HttpSession session
+    ){
+        long tempId = 1;
+
+        orderService.deliverCompleted(orderId, tempId);
+
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, "배달이 완료되었습니다.");
+    }
+
 
 }
