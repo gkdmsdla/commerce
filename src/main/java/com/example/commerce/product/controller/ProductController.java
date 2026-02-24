@@ -5,6 +5,7 @@ import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
 import com.example.commerce.global.security.UserPrincipal;
 import com.example.commerce.product.dto.*;
+import com.example.commerce.product.entity.Category;
 import com.example.commerce.product.entity.ProductStatus;
 import com.example.commerce.product.service.ProductService;
 import jakarta.validation.Valid;
@@ -50,6 +51,7 @@ public class ProductController {
     public ResponseEntity<CommonResponseDTO<List<GetAllProductResponse>>> getProductsList(
 
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Category category,
             @RequestParam(required = false) ProductStatus status,
 
             @RequestParam(defaultValue = "1") int page,
@@ -65,7 +67,7 @@ public class ProductController {
 
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
 
-        Page<GetAllProductResponse> response = productService.getAll(keyword, status, pageable);
+        Page<GetAllProductResponse> response = productService.getAll(keyword, category, status, pageable);
 
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response.getContent());
     }
