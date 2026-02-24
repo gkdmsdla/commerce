@@ -3,6 +3,7 @@ package com.example.commerce.product.controller;
 import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
+import com.example.commerce.global.security.UserPrincipal;
 import com.example.commerce.product.dto.*;
 import com.example.commerce.product.entity.ProductStatus;
 import com.example.commerce.product.service.ProductService;
@@ -12,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,11 +26,14 @@ public class ProductController {
     private final ProductService productService;
 
     // 생성
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PostMapping("/admins/products")
-    public ResponseEntity<CommonResponseDTO<CreateProductResponse>> create(@Valid @RequestBody CreateProductRequest request) {
+    public ResponseEntity<CommonResponseDTO<CreateProductResponse>> create(
+            @Valid @RequestBody CreateProductRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         // 상품은 관리자만 등록할 수 있음
 
-        CreateProductResponse response = productService.create(request);
+        CreateProductResponse response = productService.create(request, userPrincipal);
 
         return CommonResponseHandler.success(SuccessCode.CREATE_SUCCESSFUL, response);
     }
@@ -51,7 +57,6 @@ public class ProductController {
 
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) boolean desc
-
             ) {
         Sort.Direction direction = (desc) ? Sort.Direction.DESC : Sort.Direction.ASC;
         String sortValue = "email";
@@ -65,21 +70,30 @@ public class ProductController {
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response.getContent());
     }
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PutMapping("/products/{productId}")
-    public ResponseEntity<CommonResponseDTO<UpdateProductResponse>> update(@PathVariable Long productId,@Valid @RequestBody UpdateProductRequest request) {
-        UpdateProductResponse response = productService.update(productId, request);
+    public ResponseEntity<CommonResponseDTO<UpdateProductResponse>> update(
+            @PathVariable Long productId,@Valid @RequestBody UpdateProductRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        UpdateProductResponse response = productService.update(productId, request, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @DeleteMapping("/products/{productId}")
-    public ResponseEntity<CommonResponseDTO<Void>> delete(@PathVariable Long productId) {
-        productService.delete(productId);
+    public ResponseEntity<CommonResponseDTO<Void>> delete(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        productService.delete(productId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL);
     }
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PatchMapping("/products/{productId}")
-    public ResponseEntity<CommonResponseDTO<String>> discontinueProduct(@PathVariable Long productId){
-        productService.discontinue(productId);
+    public ResponseEntity<CommonResponseDTO<String>> discontinueProduct(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal){
+        productService.discontinue(productId,userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, "상품이 단종 상태로 변경되었습니다.");
     }
 

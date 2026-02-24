@@ -1,5 +1,6 @@
 package com.example.commerce.product.entity;
 
+import com.example.commerce.admin.entity.Admin;
 import com.example.commerce.global.common.BaseEntity;
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
@@ -30,13 +31,18 @@ public class Product extends BaseEntity {
     private int stock; // 재고 수량
     private ProductStatus status;
 
+    @ManyToOne
+    @JoinColumn(name = "admin_id")
+    private Admin admin; //cs 관리자가 주문을 생성했을 때 저장됨 -> nullable
+
     // 상품 생성
-    public Product (String name, Category category, int price, int stock, ProductStatus status){
+    public Product (String name, Category category, int price, int stock, ProductStatus status, Admin admin){
         this.name = name;
         this.category = category;
         this.price = price;
         this.stock = stock;
         this.status = status;
+        this.admin = admin;
     }
 
     // 상품 수정

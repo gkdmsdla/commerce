@@ -8,5 +8,6 @@ public record GetAllProductResponse (
         int productPrice,
         int productStock,
         String statusName,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String adminName
 ) {}
