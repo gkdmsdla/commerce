@@ -100,6 +100,17 @@ public class AdminService {
         );
     }
 
+    // 로그아웃: 리프레시 토큰 삭제 로직
+    @Transactional
+    public void logout(Long sessionAdminId) {
+        // 현재 로그인한 관리자 객체를 가져옴
+        Admin admin = getAdminById(sessionAdminId);
+
+        // 해당 관리자의 이메일로 저장된 리프레시 토큰을 DB에서 완전 삭제
+        // 이를 통해 탈취된 토큰이라도 더 이상 재발급을 받을 수 없게 만듦.
+        refreshTokenRepository.deleteByEmail(admin.getEmail());
+    }
+
     // 관리자 승인 (JPA 변경 감지 활용)
     @Transactional
     public void approveAdmin(Long adminId, Long sessionAdminId) {
@@ -120,7 +131,7 @@ public class AdminService {
         admin.approve();
     }
 
-        //관리자 리스트 페이징 조회
+    //관리자 리스트 페이징 조회
     @Transactional(readOnly = true)
     public Page<AdminDetailResponse> getAdminList(long sessionAdminId, String keyword, Role role, AdminStatus status, Pageable pageable) {
         //admin id 로 admin 을 찾고, 활성상태인지 확인
@@ -167,7 +178,7 @@ public class AdminService {
     @Transactional
     public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request, Long sessionAdminId) {
         isActiveAdmin(getAdminById(sessionAdminId));
-Admin admin = adminRepository.findById(adminId)
+        Admin admin = adminRepository.findById(adminId)
                 .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
 
         // 보안 체크: 만약 이메일을 변경하려고 하는데, 그 이메일이 이미 다른 사람의 것이라면 막음
@@ -232,6 +243,12 @@ Admin admin = adminRepository.findById(adminId)
     @Transactional
     public void updateAdminRole(Long targetId, String roleString, Long sessionAdminId) {
         isActiveAdmin(getAdminById(sessionAdminId)); // 슈퍼관리자 활성 상태 검사
+
+        // 관리자 본인은 본인의 역할을 직접 변경할 수 없게 방지함.
+        if (targetId.equals(sessionAdminId)) {
+            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN); // 권한 없음(403) 에러 발생
+        }
+
         Admin admin = getAdminById(targetId);
 
         // String으로 받아서 Role.from()으로 치환

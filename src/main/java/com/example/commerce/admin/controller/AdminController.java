@@ -59,6 +59,15 @@ public class AdminController {
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
     }
 
+    // 로그아웃 API 신규 구현
+    @PostMapping("/logout")
+    public ResponseEntity<CommonResponseDTO<Void>> logout(
+            @AuthenticationPrincipal AdminUserDetails userDetails
+    ) {
+        adminService.logout(userDetails.getAdmin().getId());
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED); // 또는 LOGOUT_SUCCESSFUL 등 상황에 맞는 코드
+    }
+
     // 관리자 리스트 조회 (슈퍼 관리자 전용)
     // Spring Security가 세션/토큰을 확인하여 ROLE_SUPER_ADMIN이 아니면 403을 반환.
     @PreAuthorize("hasRole('SUPER_ADMIN')")
@@ -67,7 +76,7 @@ public class AdminController {
             /*
             * RequestParam : URL 주소 뒤에 ? 를 붙이고, key=value 형태로 데이터 보내는 쿼리 스트림을
               Java의 변수로 자동 적용해주는 어노테이션
-           *  required = false -> 검색조건에서 있어도, 없어도 상관없다면 false 로 되어있어야 에러 방지됨
+           * required = false -> 검색조건에서 있어도, 없어도 상관없다면 false 로 되어있어야 에러 방지됨
             (기본적으로 RequestParam 값은 클라이언트가 무조건 보내야 하기 때문)
              */
             @RequestParam(required = false) String keyword,
@@ -242,6 +251,7 @@ public class AdminController {
         adminService.updateAdminRole(id, request.getRole(), userDetails.getAdmin().getId());
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);
     }
+
     @PostMapping("/reissue")
     public ResponseEntity<CommonResponseDTO<String>> reissue(
             // 헤더의 "Refresh-Token" 키값으로 받는다고 가정
