@@ -9,6 +9,7 @@ import com.example.commerce.global.config.PasswordEncoder;
 import com.example.commerce.global.exception.ErrorCode;
 import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.global.security.JwtUtil;
+import com.example.commerce.global.security.UserPrincipal;
 import com.example.commerce.global.security.entity.RefreshToken;
 import com.example.commerce.global.security.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -133,9 +134,9 @@ public class AdminService {
 
     //관리자 리스트 페이징 조회
     @Transactional(readOnly = true)
-    public Page<AdminDetailResponse> getAdminList(long sessionAdminId, String keyword, Role role, AdminStatus status, Pageable pageable) {
+    public Page<AdminDetailResponse> getAdminList(UserPrincipal userPrincipal, String keyword, Role role, AdminStatus status, Pageable pageable) {
         //admin id 로 admin 을 찾고, 활성상태인지 확인
-        isActiveAdmin(getAdminById(sessionAdminId));
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
 
         // 1. Repository의 동적 쿼리를 호출하여 엔티티 페이징 객체를 가져옴
         Page<Admin> admins = adminRepository.searchAdmins(keyword, role, status, pageable);
@@ -156,11 +157,12 @@ public class AdminService {
 
     // 개별 관리자의 상세정보 조회
     @Transactional(readOnly = true)
-    public AdminDetailResponse getAdminDetail(Long adminId, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId)); // 로그인 한 관리자가 활성상태인지 확인
+    public AdminDetailResponse getAdminDetail(Long adminId, UserPrincipal userPrincipal) {
+        //isActiveAdmin(getAdminById(userPrincipal.getId())); // 로그인 한 관리자가 활성상태인지 확인
 
         // 찾으려는 관리자가 존재하는지 확인
-        Admin admin = getAdminById(adminId);
+        Admin admin = getAdminById(userPrincipal.getId());
+        isActiveAdmin(admin);
 
         //return AdminDetailResponse.from(admin);
         return new AdminDetailResponse(
@@ -176,10 +178,9 @@ public class AdminService {
     }
     // 관리자 정보/내 프로필 수정
     @Transactional
-    public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId));
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+    public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
+        Admin admin = getAdminById(adminId);
 
         // 보안 체크: 만약 이메일을 변경하려고 하는데, 그 이메일이 이미 다른 사람의 것이라면 막음
         if (!admin.getEmail().equals(request.getEmail()) && adminRepository.existsByEmail(request.getEmail())) {
@@ -241,11 +242,11 @@ public class AdminService {
     }
 
     @Transactional
-    public void updateAdminRole(Long targetId, String roleString, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId)); // 슈퍼관리자 활성 상태 검사
+    public void updateAdminRole(Long targetId, String roleString, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId())); // 슈퍼관리자 활성 상태 검사
 
         // 관리자 본인은 본인의 역할을 직접 변경할 수 없게 방지함.
-        if (targetId.equals(sessionAdminId)) {
+        if (targetId.equals(userPrincipal.getId())) {
             throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN); // 권한 없음(403) 에러 발생
         }
 
@@ -257,8 +258,8 @@ public class AdminService {
     }
 
     @Transactional
-    public void updateAdminStatus(Long targetId, String statusString, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId));
+    public void updateAdminStatus(Long targetId, String statusString, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
         Admin admin = getAdminById(targetId);
 
         AdminStatus newStatus = AdminStatus.from(statusString);
@@ -266,8 +267,8 @@ public class AdminService {
     }
 
     @Transactional
-    public void deleteAdmin(Long targetId, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId));
+    public void deleteAdmin(Long targetId, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
         Admin admin = getAdminById(targetId);
 
         // Soft Delete 로직
