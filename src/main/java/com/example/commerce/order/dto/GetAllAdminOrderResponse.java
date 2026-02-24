@@ -10,7 +10,6 @@ public record GetAllAdminOrderResponse(
         String customerName,
 
         String productName,
-        long totalPrice,
         String orderStatus,
         int orderQuantity,
 

@@ -3,6 +3,7 @@ package com.example.commerce.order.controller;
 import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
+import com.example.commerce.global.security.UserPrincipal;
 import com.example.commerce.order.dto.*;
 import com.example.commerce.order.entity.OrderStatus;
 import com.example.commerce.product.entity.ProductStatus;
@@ -22,6 +23,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,25 +36,30 @@ public class OrderController {
 
     private final OrderService orderService;
 
+    // 1. 고객의 주문 생성
+    @PreAuthorize("hasRole('CUSTOMER')")
     @PostMapping("/orders")
     ResponseEntity<CommonResponseDTO<CreateOrderResponse>> create(
-            @Valid @RequestBody CreateOrderRequest request, HttpSession session) {
+            @Valid @RequestBody CreateOrderRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         //고객이 주문
         // 세션에서 customer 정보를 빼와야됨
 //        SessionCustomer sessionCustomer = (SessionCustomer) session.getAttribute("loginCustomer");
 //        if (sessionCustomer == null) {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
-        long tempId = 1;
 
-        CreateOrderResponse response = orderService.create(tempId, request);
+        CreateOrderResponse response = orderService.create(userPrincipal, request);
 
         return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
     }
 
+    //2. 관리자의 주문 생성
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PostMapping("/admins/orders")
     ResponseEntity<CommonResponseDTO<CreateAdminOrderResponse>> create(
-            @Valid @RequestBody CreateAdminOrderRequest request, HttpSession session) {
+            @Valid @RequestBody CreateAdminOrderRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         //관리자 주문
         // 세션에서 admin 정보를 빼와야됨
 
@@ -60,35 +68,30 @@ public class OrderController {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        long tempId = 1;
-
-        CreateAdminOrderResponse response = orderService.createByAdmin(tempId, request);
+        CreateAdminOrderResponse response = orderService.createByAdmin(userPrincipal, request);
         return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response);
     }
 
 
+    // 관리자의 주문 전체 조회
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/admin/orders") // 해당 endpoint로 get 요청이 들어올 경우 아래 메서드로 응답할 거다.
-    public ResponseEntity<CommonResponseDTO<List<GetAllAdminOrderResponse>>> getAllByAdmin(@PageableDefault() Pageable pageable, HttpSession session) {
+    public ResponseEntity<CommonResponseDTO<List<GetAllAdminOrderResponse>>> getAllByAdmin(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) OrderStatus status,
+            @PageableDefault() Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-//        // 아래 권한 체크
-//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
-//        // 세션에서 겟어트리뷰트를 통해서 로그인 어드민 키 값에 해당하는 데이터를 받아올 거고
-//        // 세션 어드민이라는 dto에 담아서 쓸 거다.
-//        // dto를 사용할 때는 seesionAdmin을 사용할 거다.
-//        if (sessionAdmin == null) {
-//            // 아무런 값이 없으면
-//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-//            // before_login을 던져줄 거다.
-//        }
 
-        Page<GetAllAdminOrderResponse> response = orderService.getAllByAdmin(pageable);
+        Page<GetAllAdminOrderResponse> response = orderService.getAllByAdmin(keyword, status, pageable, userPrincipal);
         // 응답할 데이터 ( Page<GetAllAdminOrderResponse>  ) 를 만들기 위해서,
         //
         //orderService에 있는 getAllByAdmin 이란 메서드를 사용할거다 .
         return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response.getContent());
     }
 
-
+    // 고객의 주문 전체 조회
+    @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/orders")
     public ResponseEntity<CommonResponseDTO<List<GetAllCustomerOrderResponse>>> getAllbyCustomer(
             @RequestParam(required = false) String keyword,
@@ -98,7 +101,9 @@ public class OrderController {
             @RequestParam(defaultValue = "10") int size,
 
             @RequestParam(required = false) String sort,
-            @RequestParam(required = false) boolean desc
+            @RequestParam(required = false) boolean desc,
+
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
         Sort.Direction direction = (desc) ? Sort.Direction.DESC : Sort.Direction.ASC;
         String sortValue = "email";
@@ -106,72 +111,68 @@ public class OrderController {
         else if ("createdAt".equals(sort)) sortValue = "createdAt";
 
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
-        //SessionCustomer sessionCustomer = (SessionCustomer) session.getAttribute("loginAdmin");
-        long tempId = 1;
 
-        Page<GetAllCustomerOrderResponse> response = orderService.getAllByCustomer(keyword, status, pageable);
+        Page<GetAllCustomerOrderResponse> response = orderService.getAllByCustomer(userPrincipal, keyword, status, pageable);
 
         return CommonResponseHandler.success(SuccessCode.ORDER_SUCCESSFUL, response.getContent());
     }
 
 
-    // 단건 주문 조회 (관리자)
+    // 관리자의 주문 단건 조회
     @GetMapping("/admins/orders/{id}")
     ResponseEntity<CommonResponseDTO<GetOneAdminOrderResponse>> getOne(
             @PathVariable("id") Long orderId,
-            HttpSession session) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
 //        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
 //        if (sessionAdmin == null) {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        long tempId = 1;
-
-
-        GetOneAdminOrderResponse response = orderService.getOneAdminOrder(orderId, tempId);
+        GetOneAdminOrderResponse response = orderService.getOneAdminOrder(orderId, userPrincipal);
 
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
-    // 단건 주문 조회 (고객)
+    // 고객의 주문 단건 조회
+    @PreAuthorize("hasRole('CUSTOMER') and #")
     @GetMapping("/orders/{id}")
     ResponseEntity<CommonResponseDTO<GetOneOrderResponse>> getOneOrder(
             @PathVariable("id") Long orderId,
-            HttpSession session) {
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
 //        SessionCustomer sessionCustomer = (SessionCustomer) session.getAttribute("loginCustomer");
 //        if (sessionCustomer == null) {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
-        long tempId = 1;
-
-        GetOneOrderResponse response = orderService.getOneOrder(orderId, tempId);
+        GetOneOrderResponse response = orderService.getOneOrder(orderId, userPrincipal);
 
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
+
+    //주문 취소
     @PatchMapping("/admins/order/{id}/cancel")
     ResponseEntity<CommonResponseDTO<CancelOrderResponse>> getCancel(
-            @PathVariable("id") Long orderId, HttpSession session, CancelOrderRequest request) {
+            @PathVariable("id") Long orderId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid CancelOrderRequest request) {
 //        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
 //        if (sessionAdmin == null) {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
-        long tempId = 1;
-
-        CancelOrderResponse response = orderService.cancelByAdmin(orderId, tempId, request);
+        CancelOrderResponse response = orderService.cancelByAdmin(orderId, userPrincipal, request);
 
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL, response);
     }
 
+    // 주문 완료
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PatchMapping("/admins/orders/{orderId}/delivered")
     ResponseEntity<CommonResponseDTO<String>> deliverCompleted(
-            @PathVariable Long orderId, HttpSession session
+            @PathVariable Long orderId, @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
-        long tempId = 1;
-
-        orderService.deliverCompleted(orderId, tempId);
+        orderService.deliverCompleted(orderId, userPrincipal);
 
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, "배달이 완료되었습니다.");
     }

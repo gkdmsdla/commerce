@@ -66,6 +66,12 @@ public class Product extends BaseEntity {
         return true;
     }
 
+    public void chkStock(int quantity){
+        if (quantity > this.stock){
+            throw new ServiceException(ErrorCode.SHORT_STOCK);
+        }
+    }
+
     // 재고처리
     public void updateStock(int stock){
         // 계산된 값이 들어오도록 함
