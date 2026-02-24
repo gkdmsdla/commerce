@@ -1,6 +1,5 @@
 package com.example.commerce.admin.dto;
 
-import com.example.commerce.admin.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -8,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
 @Getter
-public class SignupRequest {
+public class SignupAdminRequest {
 
     @NotBlank(message = "이름은 필수입니다.")
     private String name;

@@ -17,17 +17,11 @@ import com.example.commerce.product.entity.Product;
 import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.product.entity.ProductStatus;
 import com.example.commerce.product.repository.ProductRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -83,7 +77,7 @@ public class OrderService {
     }
 
     @Transactional
-    public CreateAdminOrderResponse createByAdmin(UserPrincipal userPrincipal, CreateAdminOrderRequest request) {
+    public CreateOrderByAdminResponse createByAdmin(UserPrincipal userPrincipal, CreateOrderByAdminRequest request) {
         // 관리자가 존재하는지
         Admin admin = getAdminById(userPrincipal.getId());
         isActiveAdmin(admin);
@@ -121,7 +115,7 @@ public class OrderService {
         Order newOrder = orderRepository.save(order);
         product.updateStock(product.getStock() - request.getQuantity());
 
-        return new CreateAdminOrderResponse(
+        return new CreateOrderByAdminResponse(
                 newOrder.getId(),
                 newOrder.getOrderNo(),
 
@@ -143,14 +137,14 @@ public class OrderService {
         );
     }
 
-    public Page<GetAllAdminOrderResponse> getAllByAdmin(String keyword, OrderStatus orderStatus, Pageable pageable, UserPrincipal userPrincipal ){
+    public Page<GetOrdersByAdminResponse> getAllByAdmin(String keyword, OrderStatus orderStatus, Pageable pageable, UserPrincipal userPrincipal ){
         isActiveAdmin(getAdminById(userPrincipal.getId()));
 
         Page<Order> orders = orderRepository.searchOrders(keyword, orderStatus, null, pageable);
         //List<GetAllAdminOrderResponse> dtos = new ArrayList<>();
         // -1 을 조회할 수 없게 예외 처리
 
-        return orders.map(order -> new GetAllAdminOrderResponse(
+        return orders.map(order -> new GetOrdersByAdminResponse(
                 order.getId(),
                 order.getOrderNo(),
                 order.getCustomer().getName(),
@@ -178,14 +172,14 @@ public class OrderService {
 //        return new PageImpl<>(dtos, pageable, orders.getTotalElements());
     }
 
-    public Page<GetAllCustomerOrderResponse> getAllByCustomer(UserPrincipal userPrincipal, String keyword, OrderStatus orderStatus, Pageable pageable){
+    public Page<GetOrdersResponse> getAllByCustomer(UserPrincipal userPrincipal, String keyword, OrderStatus orderStatus, Pageable pageable){
         Customer customer = getCustomerById(userPrincipal.getId());
         // 활성 상태 고객이 아니더라도 본인이 주문한 리스트는 확인 가능해야할듯
 
         //customer 필수
         Page<Order> orders = orderRepository.searchOrders(keyword,orderStatus,customer,pageable);
 
-        return orders.map(order -> new GetAllCustomerOrderResponse(
+        return orders.map(order -> new GetOrdersResponse(
                 order.getId(),
                 order.getOrderNo(),
                 order.getCustomer().getName(),
@@ -198,7 +192,7 @@ public class OrderService {
 
 
     // 주문 단 건 조회 (관리자용)
-    public GetOneAdminOrderResponse getOneAdminOrder(Long orderId, UserPrincipal userPrincipal) {
+    public GetOneOrderByAdminResponse getOneAdminOrder(Long orderId, UserPrincipal userPrincipal) {
 
         // 관리자가 활성 상태인지 확인 (관리자 맞는지 따로 확인 안해도 되는지 체크하기)
         isActiveAdmin(getAdminById(userPrincipal.getId()));
@@ -209,7 +203,7 @@ public class OrderService {
 
         //Order newOrder = orderRepository.save(order);
 
-        return new GetOneAdminOrderResponse(
+        return new GetOneOrderByAdminResponse(
                 order.getOrderNo(),
                 order.getQuantity(),
                 order.getOrderStatus().getStatusName(),

@@ -30,10 +30,10 @@ public class CustomerController {
 
     // 1. 회원가입 (메서드 이름 수정: createCustomerResponse -> createCustomer)
     @PostMapping("/signUp")
-    public ResponseEntity<CommonResponseDTO<CreateCustomerResponse>> signup(
-            @Valid @RequestBody CreateCustomerRequest request
+    public ResponseEntity<CommonResponseDTO<SignupCustomerResponse>> signup(
+            @Valid @RequestBody SignupCustomerRequest request
     ) {
-        CreateCustomerResponse response = customerService.createCustomer(request);
+        SignupCustomerResponse response = customerService.createCustomer(request);
         return CommonResponseHandler.success(SuccessCode.CUSTOMER_SIGNUP, response);
     }
 

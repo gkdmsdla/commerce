@@ -31,23 +31,23 @@ public class AdminController {
     private final AdminService adminService;
 
     @PostMapping("/signup")
-    ResponseEntity<CommonResponseDTO<SignupResponse>> signup(
-            @Valid @RequestBody SignupRequest request
+    ResponseEntity<CommonResponseDTO<SignupAdminResponse>> signup(
+            @Valid @RequestBody SignupAdminRequest request
 
     ){
-        SignupResponse response = adminService.signup(request);
+        SignupAdminResponse response = adminService.signup(request);
 
         return CommonResponseHandler.success(SuccessCode.ADMIN_SIGNUP, response);
         //return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<CommonResponseDTO<LoginResponse>> login(
-            @Valid @RequestBody LoginRequest request
+    public ResponseEntity<CommonResponseDTO<LoginAdminResponse>> login(
+            @Valid @RequestBody LoginAdminRequest request
     ){
         // 1. HttpServletRequest 파라미터 삭제
         // 2. 서비스 호출 시에도 request(DTO)만 넘김
-        LoginResponse response = adminService.login(request);
+        LoginAdminResponse response = adminService.login(request);
 
         // JWT 토큰이 포함된 response 를 Data 로 넣어서 반환
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
@@ -66,7 +66,7 @@ public class AdminController {
     // Spring Security가 세션/토큰을 확인하여 ROLE_SUPER_ADMIN이 아니면 403을 반환.
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admins") //endpoint 수정 (by 권지원, at 02/21 12:35)
-    public ResponseEntity<CommonResponseDTO<List<GetAdminResponse>>> getAdminList(
+    public ResponseEntity<CommonResponseDTO<List<GetOneAdminResponse>>> getAdminList(
             /*
             * RequestParam : URL 주소 뒤에 ? 를 붙이고, key=value 형태로 데이터 보내는 쿼리 스트림을
               Java의 변수로 자동 적용해주는 어노테이션
@@ -114,7 +114,7 @@ public class AdminController {
 
         // 페이지 번호와 크기만 있던 기존 코드에서 정렬 기준과 오름/내림차순 받을 수 있게 변경
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
-        Page<GetAdminResponse> response = adminService.getAdminList(userPrincipal, keyword, role, status, pageable);
+        Page<GetOneAdminResponse> response = adminService.getAdminList(userPrincipal, keyword, role, status, pageable);
 
         // 200 OK 상태 코드와 함께 데이터 반환
         //return ResponseEntity.ok(response);
@@ -127,25 +127,25 @@ public class AdminController {
     //관리자 1명의 정보 상세조회
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/{adminId}")
-    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(
+    public ResponseEntity<CommonResponseDTO<GetOneAdminResponse>> getOne(
             @PathVariable long adminId, @AuthenticationPrincipal UserPrincipal userPrincipal){
 //        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
 //        if (sessionAdmin == null) {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        GetAdminResponse response = adminService.getAdminDetail(adminId, userPrincipal);
+        GetOneAdminResponse response = adminService.getAdminDetail(adminId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
     // 그냥 내 정보 조회 (중복 제거 및 AdminDetailResponse 로 통합) -> getMyInfo 삭제
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/me")
-    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getMe(
+    public ResponseEntity<CommonResponseDTO<GetOneAdminResponse>> getMe(
             @AuthenticationPrincipal UserPrincipal userPrincipal){
         Long myId = userPrincipal.getId();
         // 타인 조회 로직에 내 ID를 넣어서 리팩터링
-        GetAdminResponse response = adminService.getAdminDetail(myId, userPrincipal);
+        GetOneAdminResponse response = adminService.getAdminDetail(myId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
@@ -224,7 +224,7 @@ public class AdminController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PatchMapping("/{adminId}/status")
     public ResponseEntity<CommonResponseDTO<Void>> updateAdminStatus(
-            @PathVariable Long adminId, @Valid @RequestBody UpdateStatusRequest request,
+            @PathVariable Long adminId, @Valid @RequestBody UpdateAdminStatusRequest request,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         //SessionAdmin sessionAdmin = getSessionAdmin(session);
         adminService.updateAdminStatus(adminId, request.getStatus(), userPrincipal);

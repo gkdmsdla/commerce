@@ -79,7 +79,7 @@ public class ProductService {
     }
 
     // 전체 조회
-    public Page<GetAllProductResponse> getAll(String keyword, Category category, ProductStatus status, PageRequest pageable) {
+    public Page<GetProductsResponse> getAll(String keyword, Category category, ProductStatus status, PageRequest pageable) {
         //admin id 로 admin 을 찾고, 활성상태인지 확인
         //isActiveAdmin(getAdminById(sessionAdminId));
         Page<Product> products = productRepository.searchProducts(keyword, category, status, pageable);
@@ -88,7 +88,7 @@ public class ProductService {
 //                ? productRepository.findAllByProductnameOrderByCreatedAtDesc(keyword)
 //                : productRepository.findAllByOrderByCreatedAtDesc();
 
-        return products.map(product -> new GetAllProductResponse(
+        return products.map(product -> new GetProductsResponse(
                         product.getId(),
                         product.getName(),
                         product.getCategory().getCategoryName(),

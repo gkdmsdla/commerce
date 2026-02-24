@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 
-public record GetOneAdminOrderResponse(
+public record GetOneOrderByAdminResponse(
         // 단 건 주문 조회 응답
 
         // 주문

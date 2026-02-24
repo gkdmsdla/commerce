@@ -1,7 +1,7 @@
 package com.example.commerce.product.dto;
 import java.time.LocalDateTime;
 
-public record GetAllProductResponse (
+public record GetProductsResponse(
         Long productId,
         String productName,
         String categoryName,

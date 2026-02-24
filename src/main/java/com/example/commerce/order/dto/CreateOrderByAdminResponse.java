@@ -1,12 +1,9 @@
 package com.example.commerce.order.dto;
 
-import com.example.commerce.admin.entity.Role;
-import com.example.commerce.order.entity.OrderStatus;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record CreateAdminOrderResponse(
+public record CreateOrderByAdminResponse(
 
         long orderId,
         UUID orderNo,

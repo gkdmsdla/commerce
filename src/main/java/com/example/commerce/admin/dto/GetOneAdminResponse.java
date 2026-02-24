@@ -3,7 +3,7 @@ package com.example.commerce.admin.dto;
 import java.time.LocalDateTime;
 
 
-public record GetAdminResponse(
+public record GetOneAdminResponse(
     //response 의 경우 조금 더 자세한 정보를 front 에 주는게 좋다고 하셔서 admin 이라고 붙였습니다
     Long adminId,
     String adminName,

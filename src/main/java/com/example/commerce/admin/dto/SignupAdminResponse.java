@@ -1,11 +1,6 @@
 package com.example.commerce.admin.dto;
 
-import com.example.commerce.admin.entity.AdminStatus;
-import com.example.commerce.admin.entity.Role;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-public record SignupResponse (
+public record SignupAdminResponse(
         Long adminId,
         String adminName,
         String adminEmail,

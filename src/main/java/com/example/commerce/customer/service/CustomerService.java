@@ -37,7 +37,7 @@ public class CustomerService {
     private final JwtUtil jwtUtil;
 
     @Transactional
-    public CreateCustomerResponse createCustomer(CreateCustomerRequest request) {
+    public SignupCustomerResponse createCustomer(SignupCustomerRequest request) {
         if (customerRepository.existsByEmail(request.getCustomerEmail())) {
             throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }
@@ -54,14 +54,13 @@ public class CustomerService {
 
         Customer savedCustomer = customerRepository.save(customer);
 
-        return new CreateCustomerResponse(
+        return new SignupCustomerResponse(
                 savedCustomer.getId(),
                 savedCustomer.getName(),
                 savedCustomer.getEmail(),
                 savedCustomer.getPhone(),
                 savedCustomer.getStatus().getStatusName(),
-                savedCustomer.getCreatedAt(),
-                savedCustomer.getModifiedAt()
+                savedCustomer.getCreatedAt()
         );
     }
 

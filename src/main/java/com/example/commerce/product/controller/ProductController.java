@@ -48,7 +48,7 @@ public class ProductController {
 
     // 전체 조회
     @GetMapping("/products")
-    public ResponseEntity<CommonResponseDTO<List<GetAllProductResponse>>> getProductsList(
+    public ResponseEntity<CommonResponseDTO<List<GetProductsResponse>>> getProductsList(
 
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Category category,
@@ -67,7 +67,7 @@ public class ProductController {
 
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
 
-        Page<GetAllProductResponse> response = productService.getAll(keyword, category, status, pageable);
+        Page<GetProductsResponse> response = productService.getAll(keyword, category, status, pageable);
 
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response.getContent());
     }

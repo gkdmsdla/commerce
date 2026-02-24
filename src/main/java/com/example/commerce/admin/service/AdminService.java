@@ -29,7 +29,7 @@ public class AdminService {
     private final RefreshTokenRepository refreshTokenRepository; // 리프레시 토큰 사용 위해 활용
 
     @Transactional
-    public SignupResponse signup(SignupRequest request) {
+    public SignupAdminResponse signup(SignupAdminRequest request) {
         // request 로 들어온 email 이 이미 존재하는지 확인,
         // 존재한다면 DUPLICATE_EMAIL 409 conflict 에러 발생시킴
         if (adminRepository.existsByEmail(request.getEmail())){
@@ -54,7 +54,7 @@ public class AdminService {
         // DB에 저장
         Admin savedAdmin = adminRepository.save(admin);
 
-        return new SignupResponse(
+        return new SignupAdminResponse(
                 savedAdmin.getId(),
                 savedAdmin.getName(),
                 savedAdmin.getEmail(),
@@ -67,7 +67,7 @@ public class AdminService {
 
 
     @Transactional
-    public LoginResponse login(LoginRequest request) { // HttpServletRequest 파라미터 삭제
+    public LoginAdminResponse login(LoginAdminRequest request) { // HttpServletRequest 파라미터 삭제
         Admin admin = adminRepository.findByEmail(request.getEmail()).orElseThrow(
                 ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
         );
@@ -90,7 +90,7 @@ public class AdminService {
         refreshTokenRepository.save(tokenEntity);
 
         // 3. LoginResponse 반환 (accessToken을 프론트엔드로 전달)
-        return new LoginResponse(
+        return new LoginAdminResponse(
                 accessToken, // 기존 token 자리에 accessToken 넣기
                 admin.getId(),
                 admin.getName(),
@@ -134,7 +134,7 @@ public class AdminService {
     }
 
     //관리자 리스트 페이징 조회
-    public Page<GetAdminResponse> getAdminList(UserPrincipal userPrincipal, String keyword, Role role, AdminStatus status, Pageable pageable) {
+    public Page<GetOneAdminResponse> getAdminList(UserPrincipal userPrincipal, String keyword, Role role, AdminStatus status, Pageable pageable) {
         //admin id 로 admin 을 찾고, 활성상태인지 확인
         isActiveAdmin(getAdminById(userPrincipal.getId()));
 
@@ -143,7 +143,7 @@ public class AdminService {
 
         // 2. Page<Admin>을 Page<AdminDetailResponse>로 변환 (DTO 변환)
         //return admins.map(AdminDetailResponse::from);
-        return admins.map(admin -> new GetAdminResponse(
+        return admins.map(admin -> new GetOneAdminResponse(
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
@@ -156,7 +156,7 @@ public class AdminService {
     }
 
     // 개별 관리자의 상세정보 조회
-    public GetAdminResponse getAdminDetail(Long adminId, UserPrincipal userPrincipal) {
+    public GetOneAdminResponse getAdminDetail(Long adminId, UserPrincipal userPrincipal) {
         //isActiveAdmin(getAdminById(userPrincipal.getId())); // 로그인 한 관리자가 활성상태인지 확인
 
         // 찾으려는 관리자가 존재하는지 확인
@@ -164,7 +164,7 @@ public class AdminService {
         isActiveAdmin(admin);
 
         //return AdminDetailResponse.from(admin);
-        return new GetAdminResponse(
+        return new GetOneAdminResponse(
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
