@@ -35,7 +35,10 @@ public class SecurityConfig {
                                 "/admins/signup",
                                 "/admins/login",
                                 "/customers/signup",
-                                "/customers/login"
+                                "/customers/login",
+                                "/products",
+                                "/products/**"
+
                         ).permitAll()
                         // 그 외의 모든 요청은 인증(토큰) 필요
                         .anyRequest().authenticated()

@@ -26,7 +26,7 @@ public class ProductController {
     private final ProductService productService;
 
     // 생성
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN')")
     @PostMapping("/admins/products")
     public ResponseEntity<CommonResponseDTO<CreateProductResponse>> create(
             @Valid @RequestBody CreateProductRequest request,
@@ -46,7 +46,7 @@ public class ProductController {
     }
 
     // 전체 조회
-    @GetMapping("/admins")
+    @GetMapping("/products")
     public ResponseEntity<CommonResponseDTO<List<GetAllProductResponse>>> getProductsList(
 
             @RequestParam(required = false) String keyword,

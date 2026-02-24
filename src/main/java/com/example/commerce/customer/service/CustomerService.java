@@ -209,15 +209,7 @@ public class CustomerService {
     // 유저 삭제
     @Transactional
     public void deleteCustomer(Long id, UserPrincipal userPrincipal){
-        if (userPrincipal.getRole().equals("CUSTOMER")){
-            isActiveCustomer(getCustomerById(userPrincipal.getId()));
-        }else if (userPrincipal instanceof AdminUserDetails){
-            // admin 은 admin repository 에서 확인
-            isActiveAdmin(getAdminById(userPrincipal.getId()));
-        }else{
-            // 둘 다 아니라면 예상치 못한 로그인과정에서의 오류가 발생했다고 가정, before login exception 반환
-            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-        }
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
 
         Customer customer = getCustomerById(id);
 

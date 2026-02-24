@@ -99,7 +99,7 @@ public class CustomerController {
     }
 
     // 6. 고객 삭제 (Soft Delete 권장)
-    @PreAuthorize("(hasRole ('CUSTOMER') and #id== principal.id)" + " or hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
+    @PreAuthorize("hasRole ('SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<CommonResponseDTO<Void>> deleteCustomer(
             @PathVariable Long id,
@@ -110,6 +110,7 @@ public class CustomerController {
     }
 
     // 7. 고객 상태 수정
+    @PreAuthorize("hasAnyRole ('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<CommonResponseDTO<UpdateCustomerStatusResponse>> updateCustomerStatus(
             @PathVariable Long id,

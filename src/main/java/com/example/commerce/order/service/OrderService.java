@@ -7,6 +7,7 @@ import com.example.commerce.customer.entity.Customer;
 import com.example.commerce.customer.entity.CustomerStatus;
 import com.example.commerce.customer.repository.CustomerRepository;
 import com.example.commerce.global.exception.ErrorCode;
+import com.example.commerce.global.security.AdminUserDetails;
 import com.example.commerce.global.security.UserPrincipal;
 import com.example.commerce.order.dto.*;
 import com.example.commerce.order.entity.Order;
@@ -259,7 +260,19 @@ public class OrderService {
     public CancelOrderResponse cancelByAdmin(Long orderId, UserPrincipal userPrincipal, CancelOrderRequest request) {
 
         // 관리자 활성 상태 확인
-        isActiveAdmin(getAdminById(userPrincipal.getId()));
+        //isActiveAdmin(getAdminById(userPrincipal.getId()));
+
+        // userPrincipal 이 활성화 상태인지 확인
+        // customer 은 customer repository 에서 확인,
+        if (userPrincipal.getRole().equals("CUSTOMER")){
+            isActiveCustomer(getCustomerById(userPrincipal.getId()));
+        }else if (userPrincipal instanceof AdminUserDetails){
+            // admin 은 admin repository 에서 확인
+            isActiveAdmin(getAdminById(userPrincipal.getId()));
+        }else{
+            // 둘 다 아니라면 예상치 못한 로그인과정에서의 오류가 발생했다고 가정, before login exception 반환
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
 
         // 주문 확인
         Order order = getOrderById(orderId);

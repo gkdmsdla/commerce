@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -119,6 +120,7 @@ public class OrderController {
 
 
     // 관리자의 주문 단건 조회
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/admins/orders/{id}")
     ResponseEntity<CommonResponseDTO<GetOneAdminOrderResponse>> getOne(
             @PathVariable("id") Long orderId,
@@ -135,7 +137,7 @@ public class OrderController {
     }
 
     // 고객의 주문 단건 조회
-    @PreAuthorize("hasRole('CUSTOMER') and #")
+    @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/orders/{id}")
     ResponseEntity<CommonResponseDTO<GetOneOrderResponse>> getOneOrder(
             @PathVariable("id") Long orderId,
@@ -152,15 +154,13 @@ public class OrderController {
 
 
     //주문 취소
+    @PreAuthorize("isAuthenticated()")
     @PatchMapping("/admins/order/{id}/cancel")
     ResponseEntity<CommonResponseDTO<CancelOrderResponse>> getCancel(
             @PathVariable("id") Long orderId,
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid CancelOrderRequest request) {
-//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
-//        if (sessionAdmin == null) {
-//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-//        }
+
         CancelOrderResponse response = orderService.cancelByAdmin(orderId, userPrincipal, request);
 
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL, response);
@@ -176,6 +176,4 @@ public class OrderController {
 
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, "배달이 완료되었습니다.");
     }
-
-
 }
