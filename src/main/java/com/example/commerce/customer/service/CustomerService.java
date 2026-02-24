@@ -15,6 +15,8 @@ import com.example.commerce.global.security.UserPrincipal;
 import com.example.commerce.global.security.entity.RefreshToken;
 import com.example.commerce.global.security.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -129,23 +131,22 @@ public class CustomerService {
 
     // 고객 리스트 조회
     @Transactional(readOnly = true)
-    public List<GetOneCustomerResponse> findAllCustomer(UserPrincipal userPrincipal) {
+    public Page<GetOneCustomerResponse> findAllCustomer(UserPrincipal userPrincipal, String keyword, CustomerStatus status, PageRequest pageable) {
 
         // 어차피 관리자만 로그인 되었기 때문에 관리자가 활성상태인지만 확인
         isActiveAdmin(getAdminById(userPrincipal.getId()));
 
-        return customerRepository.findAll()
-                .stream()
-                .map(customer -> new GetOneCustomerResponse(
-                        customer.getId(),
-                        customer.getName(),
-                        customer.getEmail(),
-                        customer.getPhone(),
-                        customer.getStatus().getStatusName(),
-                        customer.getCreatedAt(),
-                        customer.getModifiedAt()
-                ))
-                .toList();
+        Page<Customer> customers = customerRepository.searchCustomers(keyword, status, pageable);
+
+        return customers.map(customer -> new GetOneCustomerResponse(
+                customer.getId(),
+                customer.getName(),
+                customer.getEmail(),
+                customer.getPhone(),
+                customer.getStatus().getStatusName(),
+                customer.getCreatedAt(),
+                customer.getModifiedAt()
+        ));
     }
 
     // 유저 수정
@@ -169,12 +170,8 @@ public class CustomerService {
         Customer customer = getCustomerById(id);
 
         // 이메일 중복 검사
-        if (request.getCustomerEmail() != null){
-            customerRepository.findByEmail(request.getCustomerEmail())
-                    .filter(found -> !found.getId().equals(id))
-                    .ifPresent(found -> {
-                        throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
-                    });
+        if (!customer.getEmail().equals(request.getCustomerEmail()) && adminRepository.existsByEmail(request.getCustomerEmail())) {
+            throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         customer.update(
@@ -194,13 +191,35 @@ public class CustomerService {
         );
     }
 
+    @Transactional
+    public UpdateCustomerStatusResponse updateCustomerStatus(Long id, UpdateCustomerStatusRequest request, UserPrincipal userPrincipal){
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
+
+        Customer customer = getCustomerById(id);
+
+        CustomerStatus status = CustomerStatus.from(request.getCustomerStatus());
+
+        return new UpdateCustomerStatusResponse(
+                customer.getId(),
+                status.getStatusName(),
+                customer.getModifiedAt()
+        );
+    }
+
     // 유저 삭제
     @Transactional
-    public void deleteCustomer(Long id){
+    public void deleteCustomer(Long id, UserPrincipal userPrincipal){
+        if (userPrincipal.getRole().equals("CUSTOMER")){
+            isActiveCustomer(getCustomerById(userPrincipal.getId()));
+        }else if (userPrincipal instanceof AdminUserDetails){
+            // admin 은 admin repository 에서 확인
+            isActiveAdmin(getAdminById(userPrincipal.getId()));
+        }else{
+            // 둘 다 아니라면 예상치 못한 로그인과정에서의 오류가 발생했다고 가정, before login exception 반환
+            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
+        }
 
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() ->
-                        new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
+        Customer customer = getCustomerById(id);
 
         customerRepository.delete(customer);
 
