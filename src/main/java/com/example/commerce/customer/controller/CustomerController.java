@@ -5,9 +5,14 @@ import com.example.commerce.customer.service.CustomerService;
 import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
+import com.example.commerce.global.security.AdminUserDetails;
+import com.example.commerce.global.security.CustomerUserDetails;
+import com.example.commerce.global.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,28 +46,35 @@ public class CustomerController {
     }
 
     // 3. 고객 상세 조회
+    @PreAuthorize("(hasRole ('CUSTOMER') and #id== principal.id)" + " or hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<CommonResponseDTO<GetOneCustomerResponse>> findCustomer(
-            @PathVariable Long id
-    ){
-        GetOneCustomerResponse response = customerService.findCustomer(id);
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+            ){
+        GetOneCustomerResponse response = customerService.findCustomer(id, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
     // 4. 고객 리스트 조회
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping
-    public ResponseEntity<CommonResponseDTO<List<GetOneCustomerResponse>>> findAllCustomer(){
-        List<GetOneCustomerResponse> responses = customerService.findAllCustomer();
+    public ResponseEntity<CommonResponseDTO<List<GetOneCustomerResponse>>> findAllCustomer(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ){
+        List<GetOneCustomerResponse> responses = customerService.findAllCustomer(userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, responses);
     }
 
     // 5. 고객 정보 수정
+    @PreAuthorize("(hasRole ('CUSTOMER') and #id== principal.id)" + " or hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PatchMapping("/{id}")
     public ResponseEntity<CommonResponseDTO<GetOneCustomerResponse>> updateCustomer(
             @PathVariable Long id,
-            @RequestBody UpdateCustomerRequest request
+            @RequestBody UpdateCustomerRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        GetOneCustomerResponse response = customerService.updateCustomer(id, request);
+        GetOneCustomerResponse response = customerService.updateCustomer(id, request, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 

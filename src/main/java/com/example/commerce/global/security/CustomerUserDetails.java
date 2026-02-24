@@ -12,7 +12,7 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class CustomerUserDetails implements UserDetails {
+public class CustomerUserDetails implements UserDetails,UserPrincipal {
     // session 대신 Spring Security가 사용하는 로그인 된 사용자 정보 객체
 
     private final Customer customer;
@@ -54,5 +54,20 @@ public class CustomerUserDetails implements UserDetails {
     public boolean isEnabled() {
         // 고객의 상태가 활성(ACTIVE)일 때만 계정 사용 가능 처리
         return customer.getStatus() == CustomerStatus.ACTIVE;
+    }
+
+    @Override
+    public Long getId() {
+        return customer.getId();
+    }
+
+    @Override
+    public String getEmail() {
+        return customer.getEmail();
+    }
+
+    @Override
+    public String getRole() {
+        return "CUSTOMER";
     }
 }

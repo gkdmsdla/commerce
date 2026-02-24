@@ -11,7 +11,7 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class AdminUserDetails implements UserDetails {
+public class AdminUserDetails implements UserDetails,UserPrincipal {
     //session 대신 Spring Security 가 사용하는 로그인 된 사용자 정보 객체
 
     private final Admin admin;
@@ -51,5 +51,20 @@ public class AdminUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return admin.getStatus().name().equals("APPROVED");
+    }
+
+    @Override
+    public Long getId() {
+        return admin.getId();
+    }
+
+    @Override
+    public String getEmail() {
+        return admin.getEmail();
+    }
+
+    @Override
+    public String getRole() {
+        return admin.getRole().getRoleName();
     }
 }
