@@ -8,8 +8,6 @@ public record UpdateProductResponse(
         String productName,
         String categoryName,
         int productPrice,
-        int productStock,
         String statusName,
-        LocalDateTime createdAt,
         LocalDateTime modifiedAt
 ) {}

@@ -18,11 +18,4 @@ public class UpdateProductRequest {
 
     @NotNull(message = "가격은 필수입니다.")
     private Integer productPrice;
-
-    @NotNull(message = "재고는 필수입니다.")
-    @Min(value = 0)
-    private Integer productStock;
-
-    //private ProductStatus productStatus;
-    private String productStatus;
 }

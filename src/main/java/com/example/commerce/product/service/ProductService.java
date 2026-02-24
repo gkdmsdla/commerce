@@ -13,12 +13,12 @@ import com.example.commerce.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProductService {
     private final ProductRepository productRepository;
     private final AdminRepository adminRepository;
@@ -55,13 +55,12 @@ public class ProductService {
                 saved.getPrice(),
                 saved.getStock(),
                 saved.getStatus().getStatusName(),
-                saved.getAdmin().getName(),
-                saved.getCreatedAt()
+                saved.getCreatedAt(),
+                saved.getAdmin().getName()
         );
     }
 
     // 단건 조회
-    @Transactional(readOnly = true)
     public GetOneProductResponse getOne (Long productId) {
 //        Product product = productRepository.findById(productId).orElseThrow(()
 //                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -80,7 +79,6 @@ public class ProductService {
     }
 
     // 전체 조회
-    @Transactional(readOnly = true)
     public Page<GetAllProductResponse> getAll(String keyword, Category category, ProductStatus status, PageRequest pageable) {
         //admin id 로 admin 을 찾고, 활성상태인지 확인
         //isActiveAdmin(getAdminById(sessionAdminId));
@@ -110,15 +108,12 @@ public class ProductService {
         isActiveAdmin(getAdminById(userPrincipal.getId()));
         Product product = getProductById(productId);
 
-        ProductStatus status = ProductStatus.from(request.getProductStatus());
         Category category = Category.from(request.getCategory());
 
         product.update(
                 request.getProductName(),
                 category,
-                request.getProductPrice(),
-                request.getProductStock(),
-                status
+                request.getProductPrice()
         );
 
         return new UpdateProductResponse(
@@ -126,10 +121,26 @@ public class ProductService {
                 product.getName(),
                 product.getCategory().getCategoryName(),
                 product.getPrice(),
-                product.getStock(),
                 product.getStatus().getStatusName(),
-                product.getCreatedAt(),
                 product.getModifiedAt());
+    }
+
+    @Transactional
+    public UpdateStockResponse restock(Long productId, UpdateStockRequest request, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
+
+        Product product = getProductById(productId);
+        int previousStock = product.getStock();
+
+        product.updateStock(request.getStock());
+
+        return new UpdateStockResponse(
+                product.getId(),
+                product.getName(),
+                previousStock,
+                product.getStock(),
+                product.getModifiedAt()
+        );
     }
 
     // 삭제
@@ -143,7 +154,7 @@ public class ProductService {
         productRepository.delete(product);
     }
 
-
+    @Transactional
     public void discontinue(Long productId, UserPrincipal userPrincipal) {
 //        Product product = productRepository.findById(productId).orElseThrow(()
 //                -> new ServiceException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -182,4 +193,6 @@ public class ProductService {
             }
         }
     }
+
+
 }

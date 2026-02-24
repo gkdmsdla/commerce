@@ -9,7 +9,7 @@ public record CreateProductResponse (
     int productPrice,
     int productStock,
     String statusName,
-    String adminName,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    String adminName
 ){}
 

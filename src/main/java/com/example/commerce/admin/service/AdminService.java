@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AdminService {
 
     private final AdminRepository adminRepository;
@@ -133,8 +134,7 @@ public class AdminService {
     }
 
     //관리자 리스트 페이징 조회
-    @Transactional(readOnly = true)
-    public Page<AdminDetailResponse> getAdminList(UserPrincipal userPrincipal, String keyword, Role role, AdminStatus status, Pageable pageable) {
+    public Page<GetAdminResponse> getAdminList(UserPrincipal userPrincipal, String keyword, Role role, AdminStatus status, Pageable pageable) {
         //admin id 로 admin 을 찾고, 활성상태인지 확인
         isActiveAdmin(getAdminById(userPrincipal.getId()));
 
@@ -143,7 +143,7 @@ public class AdminService {
 
         // 2. Page<Admin>을 Page<AdminDetailResponse>로 변환 (DTO 변환)
         //return admins.map(AdminDetailResponse::from);
-        return admins.map(admin -> new AdminDetailResponse(
+        return admins.map(admin -> new GetAdminResponse(
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
@@ -156,8 +156,7 @@ public class AdminService {
     }
 
     // 개별 관리자의 상세정보 조회
-    @Transactional(readOnly = true)
-    public AdminDetailResponse getAdminDetail(Long adminId, UserPrincipal userPrincipal) {
+    public GetAdminResponse getAdminDetail(Long adminId, UserPrincipal userPrincipal) {
         //isActiveAdmin(getAdminById(userPrincipal.getId())); // 로그인 한 관리자가 활성상태인지 확인
 
         // 찾으려는 관리자가 존재하는지 확인
@@ -165,7 +164,7 @@ public class AdminService {
         isActiveAdmin(admin);
 
         //return AdminDetailResponse.from(admin);
-        return new AdminDetailResponse(
+        return new GetAdminResponse(
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
@@ -221,25 +220,7 @@ public class AdminService {
         );
     }
 
-    public Admin getAdminById(long adminId){
-        return adminRepository.findById(adminId).orElseThrow(
-                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-        );
-    }
 
-    // 관리자가 활성상태가 맞는지 확인하는 로직
-    public void isActiveAdmin(Admin admin){
-        //isLoginable 은 활성(Active) 상태에서만 true 니까 활성상태가 아니라면 throw
-        if(!admin.getStatus().isLoginable()){
-            switch (admin.getStatus()) {
-                case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
-                case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
-                case STOPPED -> throw new ServiceException(ErrorCode.ACCOUNT_STOPPED);   // "계정 정지됨"
-                case INACTIVE -> throw new ServiceException(ErrorCode.ACCOUNT_INACTIVE); // "계정 비활성화됨"
-                default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
-            }
-        }
-    }
 
     @Transactional
     public void updateAdminRole(Long targetId, String roleString, UserPrincipal userPrincipal) {
@@ -296,6 +277,26 @@ public class AdminService {
         isActiveAdmin(admin); // 정지되거나 탈퇴한 유저인지 상태 재검증
 
         return jwtUtil.createToken(admin.getId(), admin.getEmail(), admin.getRole().name());
+    }
+
+    public Admin getAdminById(long adminId){
+        return adminRepository.findById(adminId).orElseThrow(
+                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
+        );
+    }
+
+    // 관리자가 활성상태가 맞는지 확인하는 로직
+    public void isActiveAdmin(Admin admin){
+        //isLoginable 은 활성(Active) 상태에서만 true 니까 활성상태가 아니라면 throw
+        if(!admin.getStatus().isLoginable()){
+            switch (admin.getStatus()) {
+                case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
+                case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
+                case STOPPED -> throw new ServiceException(ErrorCode.ACCOUNT_STOPPED);   // "계정 정지됨"
+                case INACTIVE -> throw new ServiceException(ErrorCode.ACCOUNT_INACTIVE); // "계정 비활성화됨"
+                default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
+            }
+        }
     }
 
 }

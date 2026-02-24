@@ -7,22 +7,15 @@ import com.example.commerce.admin.service.AdminService;
 import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
-import com.example.commerce.global.exception.ErrorCode;
-import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.global.security.AdminUserDetails;
 import com.example.commerce.global.security.UserPrincipal;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -73,7 +66,7 @@ public class AdminController {
     // Spring Security가 세션/토큰을 확인하여 ROLE_SUPER_ADMIN이 아니면 403을 반환.
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admins") //endpoint 수정 (by 권지원, at 02/21 12:35)
-    public ResponseEntity<CommonResponseDTO<List<AdminDetailResponse>>> getAdminList(
+    public ResponseEntity<CommonResponseDTO<List<GetAdminResponse>>> getAdminList(
             /*
             * RequestParam : URL 주소 뒤에 ? 를 붙이고, key=value 형태로 데이터 보내는 쿼리 스트림을
               Java의 변수로 자동 적용해주는 어노테이션
@@ -121,7 +114,7 @@ public class AdminController {
 
         // 페이지 번호와 크기만 있던 기존 코드에서 정렬 기준과 오름/내림차순 받을 수 있게 변경
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
-        Page<AdminDetailResponse> response = adminService.getAdminList(userPrincipal, keyword, role, status, pageable);
+        Page<GetAdminResponse> response = adminService.getAdminList(userPrincipal, keyword, role, status, pageable);
 
         // 200 OK 상태 코드와 함께 데이터 반환
         //return ResponseEntity.ok(response);
@@ -134,25 +127,25 @@ public class AdminController {
     //관리자 1명의 정보 상세조회
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/{adminId}")
-    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getOne(
+    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getOne(
             @PathVariable long adminId, @AuthenticationPrincipal UserPrincipal userPrincipal){
 //        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
 //        if (sessionAdmin == null) {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        AdminDetailResponse response = adminService.getAdminDetail(adminId, userPrincipal);
+        GetAdminResponse response = adminService.getAdminDetail(adminId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
     // 그냥 내 정보 조회 (중복 제거 및 AdminDetailResponse 로 통합) -> getMyInfo 삭제
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/me")
-    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getMe(
+    public ResponseEntity<CommonResponseDTO<GetAdminResponse>> getMe(
             @AuthenticationPrincipal UserPrincipal userPrincipal){
         Long myId = userPrincipal.getId();
         // 타인 조회 로직에 내 ID를 넣어서 리팩터링
-        AdminDetailResponse response = adminService.getAdminDetail(myId, userPrincipal);
+        GetAdminResponse response = adminService.getAdminDetail(myId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 

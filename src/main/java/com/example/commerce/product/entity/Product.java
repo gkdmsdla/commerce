@@ -46,14 +46,11 @@ public class Product extends BaseEntity {
     }
 
     // 상품 수정
-    public void update (String name, Category category, int price, int stock, ProductStatus status) {
+    public void update (String name, Category category, int price) {
         this.name = name;
         this.category = category;
 
         if (priceIsValid(price)) this.price = price;
-        if (stockIsValid(stock)) this.stock = stock;
-
-        this.status = status;
     }
 
     public boolean priceIsValid(int price){

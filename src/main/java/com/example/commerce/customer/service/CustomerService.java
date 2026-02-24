@@ -25,6 +25,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
@@ -65,7 +66,7 @@ public class CustomerService {
     }
 
     // 로그인(JWT 토큰 활용)
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginCustomerResponse customerLogIn(LoginCustomerRequest request) {
         Customer customer = customerRepository.findByEmail(request.getCustomerEmail())
                 .orElseThrow(() -> new ServiceException(ErrorCode.CUSTOMER_NOT_FOUND));
@@ -101,7 +102,6 @@ public class CustomerService {
     }
 
     // 고객 상세 조회
-    @Transactional(readOnly = true)
     public GetOneCustomerResponse findCustomer(Long id, UserPrincipal userPrincipal) {
 
         // userPrincipal 이 활성화 상태인지 확인
@@ -130,7 +130,6 @@ public class CustomerService {
     }
 
     // 고객 리스트 조회
-    @Transactional(readOnly = true)
     public Page<GetOneCustomerResponse> findAllCustomer(UserPrincipal userPrincipal, String keyword, CustomerStatus status, PageRequest pageable) {
 
         // 어차피 관리자만 로그인 되었기 때문에 관리자가 활성상태인지만 확인

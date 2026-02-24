@@ -91,7 +91,7 @@ public class ProductController {
     }
 
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
-    @PatchMapping("/products/{productId}")
+    @PatchMapping("/products/{productId}/discontinue")
     public ResponseEntity<CommonResponseDTO<String>> discontinueProduct(
             @PathVariable Long productId,
             @AuthenticationPrincipal UserPrincipal userPrincipal){
@@ -99,5 +99,15 @@ public class ProductController {
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, "상품이 단종 상태로 변경되었습니다.");
     }
 
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
+    @PatchMapping("/products/{proudctId}")
+    public ResponseEntity<CommonResponseDTO<UpdateStockResponse>> restockProduct(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid UpdateStockRequest request){
+        UpdateStockResponse response = productService.restock(productId, request, userPrincipal);
+
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
+    }
 
 }
