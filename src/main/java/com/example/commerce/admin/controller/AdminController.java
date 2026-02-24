@@ -7,21 +7,15 @@ import com.example.commerce.admin.service.AdminService;
 import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
-import com.example.commerce.global.exception.ErrorCode;
-import com.example.commerce.global.exception.ServiceException;
 import com.example.commerce.global.security.AdminUserDetails;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import com.example.commerce.global.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,44 +31,46 @@ public class AdminController {
     private final AdminService adminService;
 
     @PostMapping("/signup")
-    ResponseEntity<CommonResponseDTO<SignupResponse>> signup(
-            @Valid @RequestBody SignupRequest request
+    ResponseEntity<CommonResponseDTO<SignupAdminResponse>> signup(
+            @Valid @RequestBody SignupAdminRequest request
 
     ){
-        SignupResponse response = adminService.signup(request);
+        SignupAdminResponse response = adminService.signup(request);
 
         return CommonResponseHandler.success(SuccessCode.ADMIN_SIGNUP, response);
         //return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    ResponseEntity<CommonResponseDTO<LoginResponse>> login(
-            @Valid @RequestBody LoginRequest request,
-            HttpServletRequest httpRequest
+    public ResponseEntity<CommonResponseDTO<LoginAdminResponse>> login(
+            @Valid @RequestBody LoginAdminRequest request
     ){
-        //response 를 받아와서
-        LoginResponse response= adminService.login(request, httpRequest);
+        // 1. HttpServletRequest 파라미터 삭제
+        // 2. 서비스 호출 시에도 request(DTO)만 넘김
+        LoginAdminResponse response = adminService.login(request);
 
-        //controller 에서 sessionAdmin 조립, 등록
-//        SessionAdmin sessionAdmin = new SessionAdmin(response);
-
-//        session.setAttribute("loginAdmin", sessionAdmin);
-//        session.setMaxInactiveInterval(120);// 자동 로그아웃 후 상태 변경 확인하기 위해 120초 설정
-
-        //받아온 response 를 Data 로 넣어서 반환
+        // JWT 토큰이 포함된 response 를 Data 로 넣어서 반환
         return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
-        //return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    // 로그아웃 API 신규 구현
+    @PostMapping("/logout")
+    public ResponseEntity<CommonResponseDTO<Void>> logout(
+            @AuthenticationPrincipal AdminUserDetails userDetails
+    ) {
+        adminService.logout(userDetails.getAdmin().getId());
+        return CommonResponseHandler.success(SuccessCode.DATA_UPDATED); // 또는 LOGOUT_SUCCESSFUL 등 상황에 맞는 코드
     }
 
     // 관리자 리스트 조회 (슈퍼 관리자 전용)
     // Spring Security가 세션/토큰을 확인하여 ROLE_SUPER_ADMIN이 아니면 403을 반환.
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admins") //endpoint 수정 (by 권지원, at 02/21 12:35)
-    public ResponseEntity<CommonResponseDTO<List<AdminDetailResponse>>> getAdminList(
+    public ResponseEntity<CommonResponseDTO<List<GetOneAdminResponse>>> getAdminList(
             /*
             * RequestParam : URL 주소 뒤에 ? 를 붙이고, key=value 형태로 데이터 보내는 쿼리 스트림을
               Java의 변수로 자동 적용해주는 어노테이션
-           *  required = false -> 검색조건에서 있어도, 없어도 상관없다면 false 로 되어있어야 에러 방지됨
+           * required = false -> 검색조건에서 있어도, 없어도 상관없다면 false 로 되어있어야 에러 방지됨
             (기본적으로 RequestParam 값은 클라이언트가 무조건 보내야 하기 때문)
              */
             @RequestParam(required = false) String keyword,
@@ -100,7 +96,7 @@ public class AdminController {
             // true 이면 내림차순으로 출력할게요!
             //@RequestParam(required = false) boolean desc,
 
-            @AuthenticationPrincipal AdminUserDetails userDetails
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
         //SessionAdmin 리팩터링 (과제 3 내 정렬기준, 순서 기능 추가 및 최적화)
         //Session 공통 추출 메서드는 따로 만들어서 제일 아래에 두었습니다!
@@ -118,7 +114,7 @@ public class AdminController {
 
         // 페이지 번호와 크기만 있던 기존 코드에서 정렬 기준과 오름/내림차순 받을 수 있게 변경
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
-        Page<AdminDetailResponse> response = adminService.getAdminList(userDetails.getAdmin().getId(), keyword, role, status, pageable);
+        Page<GetOneAdminResponse> response = adminService.getAdminList(userPrincipal, keyword, role, status, pageable);
 
         // 200 OK 상태 코드와 함께 데이터 반환
         //return ResponseEntity.ok(response);
@@ -130,42 +126,38 @@ public class AdminController {
     //수정 필요
     //관리자 1명의 정보 상세조회
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
-    @GetMapping("/{id}")
-    public ResponseEntity<CommonResponseDTO<AdminDetailResponse>> getOne(
-            @PathVariable long id, @AuthenticationPrincipal AdminUserDetails userDetails){
+    @GetMapping("/{adminId}")
+    public ResponseEntity<CommonResponseDTO<GetOneAdminResponse>> getOne(
+            @PathVariable long adminId, @AuthenticationPrincipal UserPrincipal userPrincipal){
 //        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
 //        if (sessionAdmin == null) {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        AdminDetailResponse response = adminService.getAdminDetail(id, userDetails.getAdmin().getId());
+        GetOneAdminResponse response = adminService.getAdminDetail(adminId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
-    // 그냥 내 정보 조회
+    // 그냥 내 정보 조회 (중복 제거 및 AdminDetailResponse 로 통합) -> getMyInfo 삭제
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/me")
-    public ResponseEntity<CommonResponseDTO<GetMyInfoResponse>> getOne(@AuthenticationPrincipal AdminUserDetails userDetails){
-//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
-//        if (sessionAdmin == null){
-//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-//        }
-
-        GetMyInfoResponse response = adminService.getMyInfo(userDetails.getAdmin().getId());
+    public ResponseEntity<CommonResponseDTO<GetOneAdminResponse>> getMe(
+            @AuthenticationPrincipal UserPrincipal userPrincipal){
+        Long myId = userPrincipal.getId();
+        // 타인 조회 로직에 내 ID를 넣어서 리팩터링
+        GetOneAdminResponse response = adminService.getAdminDetail(myId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
-    // 그냥 내 정보 수정
+    // 그냥 내 정보 수정 (중복 제거 및 UpdateAdminRequest 로 통합) -> updateMyInfo 삭제
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PutMapping("/me")
-    public ResponseEntity<CommonResponseDTO<UpdateMyInfoResponse>> updateMe(
-            @Valid @RequestBody UpdateMyInfoRequest request, @AuthenticationPrincipal AdminUserDetails userDetails){
-//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
-//        if (sessionAdmin == null){
-//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-//        }
-
-        UpdateMyInfoResponse response = adminService.updateMyInfo(userDetails.getAdmin().getId(), request);
+    public ResponseEntity<CommonResponseDTO<UpdateAdminResponse>> updateMe(
+            @Valid @RequestBody UpdateAdminRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal){
+        Long myId = userPrincipal.getId();
+        // 타인 수정 로직에 내 ID를 넣어서 리팩터링
+        UpdateAdminResponse response = adminService.updateAdminInfo(myId, request, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 
@@ -173,9 +165,9 @@ public class AdminController {
 
     // 관리자 가입 승인 (슈퍼 관리자 전용)
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PostMapping("/{id}/approve")
+    @PostMapping("/{adminId}/approve")
     public ResponseEntity<CommonResponseDTO<Void>> approveAdmin(
-            @PathVariable Long id, @AuthenticationPrincipal AdminUserDetails userDetails) {
+            @PathVariable Long adminId, @AuthenticationPrincipal AdminUserDetails userDetails) {
 //        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 //
 //        System.out.println(">>> current auth: " + auth);
@@ -187,38 +179,39 @@ public class AdminController {
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        adminService.approveAdmin(id, userDetails.getAdmin().getId());
+        adminService.approveAdmin(adminId, userDetails.getAdmin().getId());
         return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED);
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PostMapping("/{id}/reject")
+    @PostMapping("/{adminId}/reject")
     public ResponseEntity<CommonResponseDTO<RejectResponse>> rejectAdmin(
-            @PathVariable Long id, @Valid @RequestBody RejectRequest request, @AuthenticationPrincipal AdminUserDetails userDetails) {
+            @PathVariable Long adminId, @Valid @RequestBody RejectRequest request,
+            @AuthenticationPrincipal AdminUserDetails userDetails) {
 //        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
 //        if (sessionAdmin == null){
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        RejectResponse response = adminService.rejectAdmin(id, request, userDetails.getAdmin().getId());
+        RejectResponse response = adminService.rejectAdmin(adminId, request, userDetails.getAdmin().getId());
         //string 을 빼서 사용하는건 service 한테 맡겼습니다~
         return CommonResponseHandler.success(SuccessCode.STATUS_PATCHED, response);
     }
 
     // 관리자 정보 수정 (본인이거나 슈퍼 관리자일 경우)
     // #id는 URL의 {id}를 의미하며, principal.id는 로그인한 사용자의 ID를 의미합니다.
-    @PreAuthorize("#id == principal.admin.id or hasRole('SUPER_ADMIN')")
-    @PutMapping("/{id}")
+    @PreAuthorize("#adminId == principal.id or hasRole('SUPER_ADMIN')")
+    @PutMapping("/{adminId}")
     public ResponseEntity<CommonResponseDTO<UpdateAdminResponse>> updateAdminInfo(
-            @PathVariable Long id, @RequestBody UpdateAdminRequest request,
-            @AuthenticationPrincipal AdminUserDetails userDetails) {
+            @PathVariable Long adminId, @RequestBody UpdateAdminRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
 //        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
 //        //오탈자 수정
 //        if (sessionAdmin == null){
 //            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
 //        }
 
-        UpdateAdminResponse response = adminService.updateAdminInfo(id, request,userDetails.getAdmin().getId());
+        UpdateAdminResponse response = adminService.updateAdminInfo(adminId, request, userPrincipal);
         // ... (서비스 호출) -> 수정했습니다~
         //return ResponseEntity.ok().build();
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED,response);
@@ -229,42 +222,45 @@ public class AdminController {
     // =================================================================
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{adminId}/status")
     public ResponseEntity<CommonResponseDTO<Void>> updateAdminStatus(
-            @PathVariable Long id, @Valid @RequestBody UpdateStatusRequest request, @AuthenticationPrincipal AdminUserDetails userDetails) {
+            @PathVariable Long adminId, @Valid @RequestBody UpdateAdminStatusRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         //SessionAdmin sessionAdmin = getSessionAdmin(session);
-        adminService.updateAdminStatus(id, request.getStatus(), userDetails.getAdmin().getId());
+        adminService.updateAdminStatus(adminId, request.getStatus(), userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{adminId}")
     public ResponseEntity<CommonResponseDTO<Void>> deleteAdmin(
-            @PathVariable Long id, @AuthenticationPrincipal AdminUserDetails userDetails) {
+            @PathVariable Long adminId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
         //SessionAdmin sessionAdmin = getSessionAdmin(session);
-        adminService.deleteAdmin(id, userDetails.getAdmin().getId());
+        adminService.deleteAdmin(adminId, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);
     }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @PatchMapping("/{id}/role")
+    @PatchMapping("/{adminId}/role")
     public ResponseEntity<CommonResponseDTO<Void>> updateAdminRole(
-            @PathVariable Long id, @Valid @RequestBody UpdateRoleRequest request, @AuthenticationPrincipal AdminUserDetails userDetails) {
+            @PathVariable Long adminId, @Valid @RequestBody UpdateRoleRequest request, @AuthenticationPrincipal UserPrincipal userPrincipal) {
         //SessionAdmin sessionAdmin = getSessionAdmin(session);
         // (주의: Service 에도 updateAdminRole 메서드가 존재해야 합니다)
-        adminService.updateAdminRole(id, request.getRole(), userDetails.getAdmin().getId());
+        adminService.updateAdminRole(adminId, request.getRole(), userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED);
     }
 
-    // =================================================================
-    // [유틸리티] 세션 추출 공통 메서드
-    // =================================================================
-//    private SessionAdmin getSessionAdmin(HttpSession session) {
-//        // 기존 코드의 "longinAdmin" 오타를 수정하고, 반복되는 예외 처리 로직을 통합
-//        SessionAdmin sessionAdmin = (SessionAdmin) session.getAttribute("loginAdmin");
-//        if (sessionAdmin == null) {
-//            throw new ServiceException(ErrorCode.BEFORE_LOGIN);
-//        }
-//        return sessionAdmin;
-//    }
+    @PostMapping("/reissue")
+    public ResponseEntity<CommonResponseDTO<String>> reissue(
+            // 헤더의 "Refresh-Token" 키값으로 받는다고 가정
+            //(같이 공부할 포인트) 실무 서비스에서는 프론트엔드가 Header 나 Body에 리프레시 토큰을 담아 보낸다 함.
+            @RequestHeader("Refresh-Token") String refreshToken
+    ) {
+        // 서비스 호출하여 새로운 Access Token 발급
+        String newAccessToken = adminService.reissueAccessToken(refreshToken);
+
+        // 새 토큰을 응답으로 반환
+        return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, newAccessToken);
+    }
 }

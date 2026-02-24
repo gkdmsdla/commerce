@@ -7,32 +7,29 @@ import com.example.commerce.admin.entity.Role;
 import com.example.commerce.admin.repository.AdminRepository;
 import com.example.commerce.global.config.PasswordEncoder;
 import com.example.commerce.global.exception.ErrorCode;
-import com.example.commerce.global.security.AdminUserDetails;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
 import com.example.commerce.global.exception.ServiceException;
+import com.example.commerce.global.security.JwtUtil;
+import com.example.commerce.global.security.UserPrincipal;
+import com.example.commerce.global.security.entity.RefreshToken;
+import com.example.commerce.global.security.repository.RefreshTokenRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.http.HttpRequest;
-
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AdminService {
 
     private final AdminRepository adminRepository;
+    private final JwtUtil jwtUtil; // jwt 토큰 사용을 위해 작성
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository; // 리프레시 토큰 사용 위해 활용
 
     @Transactional
-    public SignupResponse signup(SignupRequest request) {
+    public SignupAdminResponse signup(SignupAdminRequest request) {
         // request 로 들어온 email 이 이미 존재하는지 확인,
         // 존재한다면 DUPLICATE_EMAIL 409 conflict 에러 발생시킴
         if (adminRepository.existsByEmail(request.getEmail())){
@@ -57,7 +54,7 @@ public class AdminService {
         // DB에 저장
         Admin savedAdmin = adminRepository.save(admin);
 
-        return new SignupResponse(
+        return new SignupAdminResponse(
                 savedAdmin.getId(),
                 savedAdmin.getName(),
                 savedAdmin.getEmail(),
@@ -67,77 +64,34 @@ public class AdminService {
         );
     }
 
-    @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
-        // 이메일 자체가 존재하지 않는다면 404 오류 반환
+
+
+    @Transactional
+    public LoginAdminResponse login(LoginAdminRequest request) { // HttpServletRequest 파라미터 삭제
         Admin admin = adminRepository.findByEmail(request.getEmail()).orElseThrow(
                 ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
         );
 
-        // 위에서 튕기지 않았다면 email 은 존재하는게 되니까
-        // 해당 email 을 기반으로 찾은 admin 에 등록된 pw 와
-        // request 에서 입력받은 pw 가 동일한지 확인
-        // 틀렸다면 401 (unauthorized) 오류 반환
         if(!passwordEncoder.matches(request.getPassword(), admin.getPassword())){
             throw new ServiceException(ErrorCode.WRONG_PW);
         }
 
-//
-//        if(!admin.getStatus().isLoginable()){
-//            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
-//        }
+        isActiveAdmin(admin);
 
-//        if(!admin.getStatus().isLoginable()){
-//            switch (admin.getStatus()) {
-//                case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
-//                case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
-//                case STOPPED -> throw new ServiceException(ErrorCode.ADMIN_STOPPED);   // "계정 정지됨"
-//                case INACTIVE -> throw new ServiceException(ErrorCode.ADMIN_INACTIVE); // "계정 비활성화됨"
-//                default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
-//            }
-//        }
-        isActiveAdmin(admin); // 관리자가 활성 상태인지 확인
-        // 위와 같은 코드인데 이후 코드에서도 계속 사용할 것 같아서 method 로 분리했습니다!
+        // 1. Access Token 및 Refresh Token 동시 생성
+        String accessToken = jwtUtil.createToken(admin.getId(), admin.getEmail(), admin.getRole().name());
+        String refreshToken = jwtUtil.createRefreshToken(admin.getEmail());
 
-        AdminUserDetails userDetails = new AdminUserDetails(admin);
+        // 2. Refresh Token DB 저장 (이미 존재하면 Update, 없으면 Insert)
+        RefreshToken tokenEntity = refreshTokenRepository.findByEmail(admin.getEmail())
+                .orElse(new RefreshToken(admin.getEmail(), refreshToken));
 
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
+        tokenEntity.updateToken(refreshToken);
+        refreshTokenRepository.save(tokenEntity);
 
-        //SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-
-        // 세션에 SecurityContext 저장
-        HttpSession session = httpRequest.getSession(true);
-        session.setAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                context
-        );
-
-
-
-//        //저장 잘 되는지 확인 코드 ------------------------
-//        Authentication authenticationForChk = SecurityContextHolder.getContext().getAuthentication();
-//
-//        if (authenticationForChk == null) {
-//            System.out.println("Authentication is NULL");
-//        } else {
-//            System.out.println("Authentication: " + authenticationForChk);
-//            System.out.println("Principal: " + authenticationForChk.getPrincipal());
-//            System.out.println("Authorities: " + authenticationForChk.getAuthorities());
-//            System.out.println("Authenticated: " + authenticationForChk.isAuthenticated());
-//        }
-//        // -----------------------------------------------
-
-
-        return new LoginResponse(
+        // 3. LoginResponse 반환 (accessToken을 프론트엔드로 전달)
+        return new LoginAdminResponse(
+                accessToken, // 기존 token 자리에 accessToken 넣기
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
@@ -146,6 +100,17 @@ public class AdminService {
                 admin.getStatus().getStatusName(),
                 admin.getCreatedAt()
         );
+    }
+
+    // 로그아웃: 리프레시 토큰 삭제 로직
+    @Transactional
+    public void logout(Long sessionAdminId) {
+        // 현재 로그인한 관리자 객체를 가져옴
+        Admin admin = getAdminById(sessionAdminId);
+
+        // 해당 관리자의 이메일로 저장된 리프레시 토큰을 DB에서 완전 삭제
+        // 이를 통해 탈취된 토큰이라도 더 이상 재발급을 받을 수 없게 만듦.
+        refreshTokenRepository.deleteByEmail(admin.getEmail());
     }
 
     // 관리자 승인 (JPA 변경 감지 활용)
@@ -168,18 +133,17 @@ public class AdminService {
         admin.approve();
     }
 
-        //관리자 리스트 페이징 조회
-    @Transactional(readOnly = true)
-    public Page<AdminDetailResponse> getAdminList(long sessionAdminId, String keyword, Role role, AdminStatus status, Pageable pageable) {
+    //관리자 리스트 페이징 조회
+    public Page<GetOneAdminResponse> getAdminList(UserPrincipal userPrincipal, String keyword, Role role, AdminStatus status, Pageable pageable) {
         //admin id 로 admin 을 찾고, 활성상태인지 확인
-        isActiveAdmin(getAdminById(sessionAdminId));
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
 
         // 1. Repository의 동적 쿼리를 호출하여 엔티티 페이징 객체를 가져옴
         Page<Admin> admins = adminRepository.searchAdmins(keyword, role, status, pageable);
 
         // 2. Page<Admin>을 Page<AdminDetailResponse>로 변환 (DTO 변환)
         //return admins.map(AdminDetailResponse::from);
-        return admins.map(admin -> new AdminDetailResponse(
+        return admins.map(admin -> new GetOneAdminResponse(
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
@@ -192,15 +156,15 @@ public class AdminService {
     }
 
     // 개별 관리자의 상세정보 조회
-    @Transactional(readOnly = true)
-    public AdminDetailResponse getAdminDetail(Long adminId, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId)); // 로그인 한 관리자가 활성상태인지 확인
+    public GetOneAdminResponse getAdminDetail(Long adminId, UserPrincipal userPrincipal) {
+        //isActiveAdmin(getAdminById(userPrincipal.getId())); // 로그인 한 관리자가 활성상태인지 확인
 
         // 찾으려는 관리자가 존재하는지 확인
-        Admin admin = getAdminById(adminId);
+        Admin admin = getAdminById(userPrincipal.getId());
+        isActiveAdmin(admin);
 
         //return AdminDetailResponse.from(admin);
-        return new AdminDetailResponse(
+        return new GetOneAdminResponse(
                 admin.getId(),
                 admin.getName(),
                 admin.getEmail(),
@@ -213,17 +177,9 @@ public class AdminService {
     }
     // 관리자 정보/내 프로필 수정
     @Transactional
-    public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId));
-//
-//        Admin loginAdmin = adminRepository.findById(sessionAdminId).orElseThrow(
-//                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-//        );
-//
-//        isActiveAdmin(loginAdmin);
-
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+    public UpdateAdminResponse updateAdminInfo(Long adminId, UpdateAdminRequest request, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
+        Admin admin = getAdminById(adminId);
 
         // 보안 체크: 만약 이메일을 변경하려고 하는데, 그 이메일이 이미 다른 사람의 것이라면 막음
         if (!admin.getEmail().equals(request.getEmail()) && adminRepository.existsByEmail(request.getEmail())) {
@@ -247,8 +203,6 @@ public class AdminService {
 
         // 승인 또는 거부하려는 대상 관리자가 존재하는지 확인
         Admin admin = getAdminById(adminId);
-//        Admin admin = adminRepository.findById(adminId)
-//                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
 
         // 승인 또는 거부하려는 대상 관리자가 승인 대기 상태인지 확인
         if (admin.getStatus() != AdminStatus.PENDING) {
@@ -266,60 +220,63 @@ public class AdminService {
         );
     }
 
-//    public GetAdminResponse getOne(long adminId) {
-//        Admin admin = adminRepository.findById(adminId).orElseThrow(
-//                ()-> new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-//        );
-//
-//        return new GetAdminResponse(
-//                admin.getName(),
-//                admin.getEmail(),
-//                admin.getPhone(),
-//                admin.getRole().getName(),
-//                admin.getStatus().getTitle(),
-//                admin.getCreatedAt(),
-//                admin.getApprovedAt()
-//        );
-//    }
 
-    public GetMyInfoResponse getMyInfo(Long sessionAdminId) {
-        //로그인 session 에 있는 id 가 DB 에도 존재하고 있는지 재확인
-        Admin admin = getAdminById(sessionAdminId);
-//        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
-//                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-//        );
 
-        return new GetMyInfoResponse(
-                admin.getName(),
-                admin.getEmail(),
-                admin.getPhone()
-        );
-    }
+    @Transactional
+    public void updateAdminRole(Long targetId, String roleString, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId())); // 슈퍼관리자 활성 상태 검사
 
-    public UpdateMyInfoResponse updateMyInfo(Long sessionAdminId, UpdateMyInfoRequest request) {
-        //로그인 session 에 있는 id 가 DB 에도 존재하고 있는지 재확인
-        Admin admin = getAdminById(sessionAdminId);
-//        Admin admin = adminRepository.findById(sessionAdminId).orElseThrow(
-//                ()->new ServiceException(ErrorCode.ADMIN_NOT_FOUND)
-//        );
-
-        isActiveAdmin(admin); // 수정은 활성상태의 관리자만 가능
-
-        // request 로 들어온 수정 목표 email 이 이미 존재하는지 확인,
-        // 입력 메일이 자신의 기존 가입 이메일과 같으면 통과, 아니라면 존재하는 다른 이메일과 중복되는지 검사
-        // 존재한다면 DUPLICATE_EMAIL 409 conflict 에러 발생시킴
-        if (!admin.getEmail().equals(request.getEmail()) && adminRepository.existsByEmail(request.getEmail())) {
-            throw new ServiceException(ErrorCode.DUPLICATE_EMAIL);
+        // 관리자 본인은 본인의 역할을 직접 변경할 수 없게 방지함.
+        if (targetId.equals(userPrincipal.getId())) {
+            throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN); // 권한 없음(403) 에러 발생
         }
 
-        //Update, 위에서 repository 에 갔다왔으므로 자동 update 가 가능
-        admin.update(request.getName(), request.getEmail(), request.getPhone());
+        Admin admin = getAdminById(targetId);
 
-        return new UpdateMyInfoResponse(
-                admin.getName(),
-                admin.getEmail(),
-                admin.getPhone()
-        );
+        // String으로 받아서 Role.from()으로 치환
+        Role newRole = Role.from(roleString);
+        admin.updateRole(newRole);
+    }
+
+    @Transactional
+    public void updateAdminStatus(Long targetId, String statusString, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
+        Admin admin = getAdminById(targetId);
+
+        AdminStatus newStatus = AdminStatus.from(statusString);
+        admin.updateStatus(newStatus);
+    }
+
+    @Transactional
+    public void deleteAdmin(Long targetId, UserPrincipal userPrincipal) {
+        isActiveAdmin(getAdminById(userPrincipal.getId()));
+        Admin admin = getAdminById(targetId);
+
+        // Soft Delete 로직
+        admin.updateStatus(AdminStatus.INACTIVE);
+    }
+
+    // 토큰 재발급 로직
+    @Transactional
+    public String reissueAccessToken(String refreshToken) {
+        // 1. 리프레시 토큰 자체의 서명 및 만료일 검증
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new ServiceException(ErrorCode.INVALID_INPUT_VALUE); // "유효하지 않은 토큰입니다."
+        }
+
+        // 2. DB에 해당 토큰이 실제로 존재하는지 확인
+        RefreshToken savedToken = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new ServiceException(ErrorCode.INVALID_INPUT_VALUE));
+
+        String email = savedToken.getEmail();
+
+        // 3. 이메일로 관리자 정보 조회하여 새로운 Access Token 발급
+        Admin admin = adminRepository.findByEmail(email)
+                .orElseThrow(() -> new ServiceException(ErrorCode.ADMIN_NOT_FOUND));
+
+        isActiveAdmin(admin); // 정지되거나 탈퇴한 유저인지 상태 재검증
+
+        return jwtUtil.createToken(admin.getId(), admin.getEmail(), admin.getRole().name());
     }
 
     public Admin getAdminById(long adminId){
@@ -335,44 +292,11 @@ public class AdminService {
             switch (admin.getStatus()) {
                 case PENDING -> throw new ServiceException(ErrorCode.ADMIN_PENDING);   // "계정 승인대기 중"
                 case REJECTED -> throw new ServiceException(ErrorCode.ADMIN_REJECTED); // "계정 신청 거부됨"
-                case STOPPED -> throw new ServiceException(ErrorCode.ADMIN_STOPPED);   // "계정 정지됨"
-                case INACTIVE -> throw new ServiceException(ErrorCode.ADMIN_INACTIVE); // "계정 비활성화됨"
+                case STOPPED -> throw new ServiceException(ErrorCode.ACCOUNT_STOPPED);   // "계정 정지됨"
+                case INACTIVE -> throw new ServiceException(ErrorCode.ACCOUNT_INACTIVE); // "계정 비활성화됨"
                 default -> throw new ServiceException(ErrorCode.FORBIDDEN_ADMIN);
             }
         }
     }
 
-    @Transactional
-    public void updateAdminRole(Long targetId, String roleString, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId)); // 슈퍼관리자 활성 상태 검사
-        Admin admin = getAdminById(targetId);
-
-        // String으로 받아서 Role.from()으로 치환
-        Role newRole = Role.from(roleString);
-        admin.updateRole(newRole);
-    }
-
-    @Transactional
-    public void updateAdminStatus(Long targetId, String statusString, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId));
-        Admin admin = getAdminById(targetId);
-
-        AdminStatus newStatus = AdminStatus.from(statusString);
-        admin.updateStatus(newStatus);
-//        try {
-//            AdminStatus newStatus = AdminStatus.valueOf(statusString.toUpperCase());
-//            admin.updateStatus(newStatus);
-//        } catch (IllegalArgumentException e) {
-//            throw new ServiceException(ErrorCode.INVALID_STATUS); // 상태값 파싱 실패 시 에러
-//        }
-    }
-
-    @Transactional
-    public void deleteAdmin(Long targetId, Long sessionAdminId) {
-        isActiveAdmin(getAdminById(sessionAdminId));
-        Admin admin = getAdminById(targetId);
-
-        // Soft Delete 로직
-        admin.updateStatus(AdminStatus.INACTIVE);
-    }
 }

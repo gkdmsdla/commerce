@@ -14,6 +14,6 @@ public class UpdateAdminRequest {
     @Email(message = "이메일 형식과 일치해야 합니다.")
     private String email;
 
-    @Pattern(regexp = "^01[0-9]-\\d{3,4}-\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.")
+    @Pattern(regexp = "^01[0-9]-\\d{3,4}-\\d{4}$", message = "전화번호 형식은 010-XXXX-XXXX 입니다.")
     private String phone;
 }

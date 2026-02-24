@@ -1,6 +1,5 @@
 package com.example.commerce.customer.controller;
 
-
 import com.example.commerce.customer.dto.*;
 import com.example.commerce.customer.entity.CustomerStatus;
 import com.example.commerce.customer.service.CustomerService;
@@ -8,7 +7,8 @@ import com.example.commerce.global.common.CommonResponseDTO;
 import com.example.commerce.global.common.CommonResponseHandler;
 import com.example.commerce.global.common.SuccessCode;
 import com.example.commerce.global.security.AdminUserDetails;
-import jakarta.servlet.http.HttpSession;
+import com.example.commerce.global.security.CustomerUserDetails;
+import com.example.commerce.global.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,40 +28,39 @@ public class CustomerController {
 
     private final CustomerService customerService;
 
-    // 회원가입
-    @PostMapping("/signup")
+    // 1. 회원가입 (메서드 이름 수정: createCustomerResponse -> createCustomer)
+    @PostMapping("/signUp")
     public ResponseEntity<CommonResponseDTO<SignupCustomerResponse>> signup(
             @Valid @RequestBody SignupCustomerRequest request
     ) {
-        SignupCustomerResponse response = customerService.createCustomerResponse(request);
-
+        SignupCustomerResponse response = customerService.createCustomer(request);
         return CommonResponseHandler.success(SuccessCode.CUSTOMER_SIGNUP, response);
     }
 
-    //로그인
-    @PostMapping("/login")
+    // 2. 로그인 (JWT 방식으로 전면 수정)
+    @PostMapping("/logIn")
     public ResponseEntity<CommonResponseDTO<LoginCustomerResponse>> login(
-            @Valid @RequestBody LoginCustomerRequest request,
-            HttpSession httpSession) {
-        LoginCustomerResponse response = customerService.customerLogin(request, httpSession);
-        //session.setMaxInactiveInterval(120);
-        return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
+            @Valid @RequestBody LoginCustomerRequest request
+    ) {
+        // 세션 대신, 토큰이 담긴 DTO를 받도록 수정
+        LoginCustomerResponse response = customerService.customerLogIn(request);
 
+        // 세션 타임아웃을 이 곳에서 하지 않도록 수정(stateless 한 JWT 방식으로 수정했기 때문)
+        return CommonResponseHandler.success(SuccessCode.LOGIN_SUCCESSFUL, response);
     }
 
-    // 고객 상세 조회
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
+    // 3. 고객 상세 조회
+    @PreAuthorize("(hasRole ('CUSTOMER') and #id== principal.id)" + " or hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<CommonResponseDTO<GetOneCustomerResponse>> findCustomer(
-            @PathVariable Long id
-    ){
-        GetOneCustomerResponse response = customerService.findCustomer(id);
-
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+            ){
+        GetOneCustomerResponse response = customerService.findCustomer(id, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
 
-    // 고객 리스트 조회
-
+    // 4. 고객 리스트 조회
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @GetMapping
     public ResponseEntity<CommonResponseDTO<List<GetOneCustomerResponse>>> findAllCustomer(
@@ -73,7 +72,7 @@ public class CustomerController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
 
-            @AuthenticationPrincipal AdminUserDetails userDetails
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
         Sort.Direction direction = desc ? Sort.Direction.DESC : Sort.Direction.ASC;
 
@@ -83,43 +82,42 @@ public class CustomerController {
         else if ("createdAt".equals(sort)) sortValue = "createdAt";
 
         PageRequest pageable = PageRequest.of(page - 1, size, Sort.by(direction, sortValue));
-        Page<GetOneCustomerResponse> response = customerService.findAllCustomer(userDetails.getAdmin().getId(), keyword, status, pageable);
-
-        //List<GetOneCustomerResponse> responses = customerService.findAllCustomer();
-
+        Page<GetOneCustomerResponse> response = customerService.findAllCustomer(userPrincipal, keyword, status, pageable);
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response.getContent());
     }
 
-    // 고객 정보 수정
-    // 여기 관리자 말고 로그인한 본인도 할 수 있도록 수정해야함!
-
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
+    // 5. 고객 정보 수정
+    @PreAuthorize("(hasRole ('CUSTOMER') and #id== principal.id)" + " or hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PatchMapping("/{id}")
     public ResponseEntity<CommonResponseDTO<GetOneCustomerResponse>> updateCustomer(
             @PathVariable Long id,
-            @RequestBody UpdateCustomerRequest request
+            @RequestBody UpdateCustomerRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        GetOneCustomerResponse response = customerService.updateCustomer(id, request);
+        GetOneCustomerResponse response = customerService.updateCustomer(id, request, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
+    // 6. 고객 삭제 (Soft Delete 권장)
+    @PreAuthorize("hasRole ('SUPER_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<CommonResponseDTO<Void>> deleteCustomer(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        customerService.deleteCustomer(id);
-        return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL, null);
+        customerService.deleteCustomer(id, userPrincipal);
+        return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL);
     }
 
-    // 고객 상태 수정
-
+    // 7. 고객 상태 수정
+    @PreAuthorize("hasAnyRole ('SUPER_ADMIN', 'OP_ADMIN', 'CS_ADMIN')")
     @PatchMapping("/{id}/status")
-    public ResponseEntity<CommonResponseDTO<UpdateCustomerStstusResponse>> updateCustomerStatus(
+    public ResponseEntity<CommonResponseDTO<UpdateCustomerStatusResponse>> updateCustomerStatus(
             @PathVariable Long id,
-            @RequestBody UpdateCustomerStatusRequest requset
+            @RequestBody UpdateCustomerStatusRequest requset,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
-        UpdateCustomerStstusResponse response = customerService.updateCustomerStatus(id, requset);
+        UpdateCustomerStatusResponse response = customerService.updateCustomerStatus(id, requset, userPrincipal);
         return CommonResponseHandler.success(SuccessCode.DATA_UPDATED, response);
     }
 }
