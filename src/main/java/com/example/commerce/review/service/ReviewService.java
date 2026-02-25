@@ -123,6 +123,7 @@ public class ReviewService {
 
         Review review = getReviewById(reviewId);
 
+        // 여기 수정
         if (review.getOrder().getId() != order.getId()){
             throw new ServiceException(ErrorCode.REVIEW_NOT_FOUND);
         }
