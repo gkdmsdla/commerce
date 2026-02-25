@@ -93,6 +93,8 @@ public class ProductService {
 
         // [수정 완료] 리뷰 평균 (NPE 방지 로직 적용)
         Double avg = reviewRepository.averageRating(product.getId());
+
+
         double averageOfReview = (avg != null) ? Math.round(avg * 10) / 10.0 : 0.0;
 
         // 별점 별 리뷰 개수

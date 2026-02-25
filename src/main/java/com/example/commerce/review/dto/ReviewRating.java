@@ -1,5 +1,6 @@
 package com.example.commerce.review.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

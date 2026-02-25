@@ -19,6 +19,7 @@ import com.example.commerce.review.dto.GetReviewsResponse;
 import com.example.commerce.review.entity.Review;
 import com.example.commerce.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -75,8 +76,14 @@ public class ReviewService {
     }
 
     // 2. 리뷰 단건 조회
-    public GetOneReviewResponse getOneReview(Long reviewId) {
+    public GetOneReviewResponse getOneReview(Long orderId, Long reviewId) {
+        Order order = getOrderById(orderId);
+
         Review review = getReviewById(reviewId);
+
+        if (review.getOrder().getId() != order.getId()){
+            throw new ServiceException(ErrorCode.REVIEW_NOT_FOUND);
+        }
 
         return new GetOneReviewResponse(
                 review.getId(),
@@ -91,7 +98,7 @@ public class ReviewService {
     }
 
     // 3. 리뷰 전체조회
-    public Page<GetReviewsResponse> getReviews(Long orderId, String keyword, int rating, Pageable pageable) {
+    public Page<GetReviewsResponse> getReviews(Long orderId, String keyword, Integer rating, Pageable pageable) {
         Order order = getOrderById(orderId);
 
         // 특정 상품에 달린 리뷰만 get
@@ -109,10 +116,16 @@ public class ReviewService {
     }
 
     @Transactional
-    public void deleteReview(Long reviewId, UserPrincipal userPrincipal) {
+    public void deleteReview(Long orderId, Long reviewId, UserPrincipal userPrincipal) {
+        Order order = getOrderById(orderId);
+
         isActiveAdmin(getAdminById(userPrincipal.getId()));
 
         Review review = getReviewById(reviewId);
+
+        if (review.getOrder().getId() != order.getId()){
+            throw new ServiceException(ErrorCode.REVIEW_NOT_FOUND);
+        }
 
         reviewRepository.deleteById(review.getId());
     }

@@ -47,9 +47,10 @@ public class ReviewController {
     // 2. 리뷰 단건 조회
     @GetMapping("/{reviewId}")
     ResponseEntity<CommonResponseDTO<GetOneReviewResponse>> getOne(
+            @PathVariable Long orderId,
             @PathVariable Long reviewId){
 
-        GetOneReviewResponse response = reviewService.getOneReview(reviewId);
+        GetOneReviewResponse response = reviewService.getOneReview(orderId, reviewId);
 
         return CommonResponseHandler.success(SuccessCode.GET_SUCCESSFUL, response);
     }
@@ -59,7 +60,7 @@ public class ReviewController {
     ResponseEntity<CommonResponseDTO<List<GetReviewsResponse>>> getAll(
             @PathVariable Long orderId,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) int rating,
+            @RequestParam(required = false) Integer rating,
 
             @PageableDefault(
                     page = 0,
@@ -77,10 +78,11 @@ public class ReviewController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OP_ADMIN')")
     @DeleteMapping("/{reviewId}")
     ResponseEntity<CommonResponseDTO<Void>> delete(
+            @PathVariable Long orderId,
             @PathVariable Long reviewId,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ){
-        reviewService.deleteReview(reviewId, userPrincipal);
+        reviewService.deleteReview(orderId, reviewId, userPrincipal);
 
         return CommonResponseHandler.success(SuccessCode.DELETE_SUCCESSFUL);
     }

@@ -31,7 +31,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("SELECT COUNT(r) FROM Review r WHERE r.order.product.id = :productId")
     Integer countByProductId(@Param("productId") Long productId);
 
-    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.order.product.id = :productId")
+    @Query("SELECT COALESCE(AVG(r.rating), 0) FROM Review r WHERE r.order.product.id = :productId")
     Double averageRating(@Param("productId") Long productId);
 
     @Query("SELECT new com.example.commerce.review.dto.ReviewRating(r.rating, COUNT(r)) FROM Review r " +
